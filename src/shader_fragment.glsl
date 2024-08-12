@@ -19,9 +19,15 @@ uniform mat4 view;
 uniform mat4 projection;
 
 // Identificador que define qual objeto está sendo desenhado no momento
-#define SPHERE 0
-#define BUNNY  1
-#define PLANE  2
+#define PLAYER 0
+#define CAMPFIRE  1
+#define CAVE1  2
+#define CAVE2  3
+#define CAVE_WALLS1  4
+#define CAVE_WALLS2  5
+#define CAVE_STONES  6
+#define CAVE_FLOOR1  7
+#define CAVE_FLOOR2  8
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -33,14 +39,6 @@ uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
 uniform sampler2D TextureImage3;
-uniform sampler2D TextureImage4;
-uniform sampler2D TextureImage5;
-uniform sampler2D TextureImage6;
-uniform sampler2D TextureImage7;
-uniform sampler2D TextureImage8;
-uniform sampler2D TextureImage9;
-uniform sampler2D TextureImage10;
-uniform sampler2D TextureImage11;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -64,7 +62,7 @@ void main()
     vec4 p = position_world;
 
     // Ponto onde está localizada a fonte de luz
-    vec4 l_light_point = vec4(0.0,2.0,1.0,1.0);
+    vec4 l_light_point = vec4(0.0,1.0,0.0,1.0);
 
     // Normal do fragmento atual, interpolada pelo rasterizador a partir das
     // normais de cada vértice.
@@ -93,49 +91,10 @@ void main()
     float U = 0.0;
     float V = 0.0;
 
-    if ( object_id == SPHERE )
+    if ( object_id == PLAYER )
     {
-        // PREENCHA AQUI as coordenadas de textura da esfera, computadas com
-        // projeção esférica EM COORDENADAS DO MODELO. Utilize como referência
-        // o slides 134-150 do documento Aula_20_Mapeamento_de_Texturas.pdf.
-        // A esfera que define a projeção deve estar centrada na posição
-        // "bbox_center" definida abaixo.
-
-        // Você deve utilizar:
-        //   função 'length( )' : comprimento Euclidiano de um vetor
-        //   função 'atan( , )' : arcotangente. Veja https://en.wikipedia.org/wiki/Atan2.
-        //   função 'asin( )'   : seno inverso.
-        //   constante M_PI
-        //   variável position_model
-
-        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
-
-        vec4 p_linha = bbox_center + ( (position_model - bbox_center) / length(position_model - bbox_center) );
-
-        vec4 p_vetor = p_linha - bbox_center;
-
-        float theta = atan(p_vetor.x, p_vetor.z);
-
-        float phi = asin(p_vetor.y);
-
-        U = (theta + M_PI) / (2 * M_PI);
-
-        V = (phi + (M_PI_2) ) / M_PI;
-
     }
-    else if ( object_id == BUNNY )
-    {
-        // Propriedades espectrais do coelho
-        Kd = vec3(1.0, 1.0, 1.0);
-        Ks = vec3(1.0, 1.0, 1.0);
-        Ka = vec3(0.0, 0.0, 0.0);
-        q = 100.0;
-
-        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
-        U = texcoords.x;
-        V = texcoords.y;
-    }
-    else if ( object_id >= PLANE )
+    else
     {
         // Coordenadas de textura do plano, obtidas do arquivo OBJ.
         U = texcoords.x;
@@ -163,29 +122,29 @@ void main()
     vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
     vec3 Kd2 = texture(TextureImage2, vec2(U,V)).rgb;
     vec3 Kd3 = texture(TextureImage3, vec2(U,V)).rgb;
-    vec3 Kd4 = texture(TextureImage4, vec2(U,V)).rgb;
-    vec3 Kd5 = texture(TextureImage5, vec2(U,V)).rgb;
-    vec3 Kd6 = texture(TextureImage6, vec2(U,V)).rgb;
-    vec3 Kd7 = texture(TextureImage7, vec2(U,V)).rgb;
-    vec3 Kd8 = texture(TextureImage8, vec2(U,V)).rgb;
-    vec3 Kd9 = texture(TextureImage9, vec2(U,V)).rgb;
-    vec3 Kd10 = texture(TextureImage10, vec2(U,V)).rgb;
-    vec3 Kd11 = texture(TextureImage11, vec2(U,V)).rgb;
 
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
 
-    if ( object_id == SPHERE )
-    {
-        color.rgb = Kd0 * (lambert + 0.01) + Kd1 * max(0,(1.0 - (lambert*4)));
-    }
-    else if ( object_id == BUNNY )
+    if ( object_id == PLAYER )
     {
         color.rgb = Kd0 * (lambert + 0.01);
     }
-    else
+    else if ( object_id == CAMPFIRE )
+    {
+        color.rgb = Kd0 * (lambert + 0.01);
+    }
+    else if ( object_id == CAVE1 || object_id == CAVE2 || object_id == CAVE_WALLS1 || object_id == CAVE_WALLS2 )
     {
         color.rgb = Kd1 * (lambert + 0.01);
+    }
+    else if ( object_id == CAVE_STONES )
+    {
+        color.rgb = Kd2 * (lambert + 0.01);
+    }
+    else if ( object_id == CAVE_FLOOR1 || object_id == CAVE_FLOOR2 )
+    {
+        color.rgb = Kd3 * (lambert + 0.01);
     }
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é

@@ -48,6 +48,10 @@
 #include "utils.h"
 #include "matrices.h"
 
+// Constantes
+#define M_PI   3.14159265358979323846
+#define M_PI_2 1.57079632679489661923
+
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
 struct ObjModel
@@ -113,6 +117,7 @@ void PopMatrix(glm::mat4& M);
 
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
+void DrawCube(GLint render_as_black_uniform); // Desenha um cubo
 void BuildTrianglesAndAddToVirtualScene(ObjModel*); // Constrói representação de um ObjModel como malha de triângulos para renderização
 void ComputeNormals(ObjModel* model); // Computa normais de um ObjModel, caso não existam.
 void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
@@ -204,8 +209,8 @@ bool g_PERIODKeyPressed = false;
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
 float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
-float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
-float g_CameraDistance = 3.5f; // Distância da câmera para a origem
+float g_CameraPhi = 0.5f;   // Ângulo em relação ao eixo Y
+float g_CameraDistance = 10.0f; // Distância da câmera para a origem
 
 // Variáveis que controlam rotação do antebraço
 float g_ForearmAngleZ = 0.0f;
@@ -308,28 +313,20 @@ int main(int argc, char* argv[])
 
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/Campfire_MAT_BaseColor_01.jpg");      // TextureImage0
-    LoadTextureImage("../../data/RGB_23594c26f7924df4b4454218b20beb7b_20200319_Blaubeuren_Brillenhoehle_Scaled_750Kpoly_1T4K_u1_v1.jpeg"); // TextureImage1
-    LoadTextureImage("../../data/Campfire_MAT_Normal_JL.jpg"); // TextureImage2
-    LoadTextureImage("../../data/Campfire_fire_MAT_BaseColor.jpg"); // TextureImage3
-    LoadTextureImage("../../data/Campfire_fire_MAT_BaseColor_Alpha.png"); // TextureImage4
-    LoadTextureImage("../../data/Campfire_MAT_AO.jpg"); // TextureImage5
-    LoadTextureImage("../../data/Campfire_MAT_BaseColor_00.jpg"); // TextureImage6
-    LoadTextureImage("../../data/Campfire_MAT_BaseColor_01.jpg"); // TextureImage7
-    LoadTextureImage("../../data/Campfire_MAT_Metallic.jpg"); // TextureImage8
-    LoadTextureImage("../../data/Campfire_MAT_Normal_DX.jpg"); // TextureImage9
-    LoadTextureImage("../../data/Campfire_MAT_Normal_JL.jpg"); // TextureImage10
-    LoadTextureImage("../../data/Campfire_MAT_Roughness.jpg"); // TextureImage11
+    LoadTextureImage("../../data/RGB_e34762cfafeb488aa5ba2f697743a0bc_Rock_Kit_C.png"); // TextureImage1
+    LoadTextureImage("../../data/RGB_cca3c218b0804ccbb342b292cff1defb_Rock_Kit_01_C.png"); // TextureImage2
+    LoadTextureImage("../../data/cave-floor-rock_albedo.png"); // TextureImage3
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    ObjModel spheremodel("../../data/sphere.obj");
-    ComputeNormals(&spheremodel);
-    BuildTrianglesAndAddToVirtualScene(&spheremodel);
+    ObjModel cavemodel("../../data/cave.obj");
+    ComputeNormals(&cavemodel);
+    BuildTrianglesAndAddToVirtualScene(&cavemodel);
 
-    ObjModel bunnymodel("../../data/Campfire.obj");
-    ComputeNormals(&bunnymodel);
-    BuildTrianglesAndAddToVirtualScene(&bunnymodel);
+    ObjModel campfiremodel("../../data/Campfire.obj");
+    ComputeNormals(&campfiremodel);
+    BuildTrianglesAndAddToVirtualScene(&campfiremodel);
 
-    ObjModel planemodel("../../data/cave.obj");
+    ObjModel planemodel("../../data/plane.obj");
     ComputeNormals(&planemodel);
     BuildTrianglesAndAddToVirtualScene(&planemodel);
 
@@ -342,6 +339,14 @@ int main(int argc, char* argv[])
     // Inicializamos o código para renderização de texto.
     TextRendering_Init();
 
+    // Buscamos o endereço das variáveis definidas dentro do Vertex Shader.
+    // Utilizaremos estas variáveis para enviar dados para a placa de vídeo
+    // (GPU)! Veja arquivo "shader_vertex.glsl".
+    GLint model_uniform           = glGetUniformLocation(g_GpuProgramID, "model"); // Variável da matriz "model"
+    GLint view_uniform            = glGetUniformLocation(g_GpuProgramID, "view"); // Variável da matriz "view" em shader_vertex.glsl
+    GLint projection_uniform      = glGetUniformLocation(g_GpuProgramID, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
+    GLint render_as_black_uniform = glGetUniformLocation(g_GpuProgramID, "render_as_black"); // Variável booleana em shader_vertex.glsl
+
     // Habilitamos o Z-buffer. Veja slides 104-116 do documento Aula_09_Projecoes.pdf.
     glEnable(GL_DEPTH_TEST);
 
@@ -353,7 +358,7 @@ int main(int argc, char* argv[])
     // Posicao inicial do jogador
     glm::vec4 player_position = glm::vec4(0.0,0.0,0.0,1.0f);
 
-    float speed = 2.0f; // Velocidade do jogador
+    float speed = 3.5f; // Velocidade do jogador
     float prev_time = (float)glfwGetTime();
 
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
@@ -367,7 +372,7 @@ int main(int argc, char* argv[])
         // Conversaremos sobre sistemas de cores nas aulas de Modelos de Iluminação.
         //
         //           R     G     B     A
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
         // "Pintamos" todos os pixels do framebuffer com a cor definida acima,
         // e também resetamos todos os pixels do Z-buffer (depth buffer).
@@ -408,7 +413,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -20.0f; // Posição do "far plane"
+        float farplane  = -60.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -439,9 +444,15 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        #define SPHERE 0
-        #define BUNNY  1
-        #define PLANE  2
+        #define PLAYER 0
+        #define CAMPFIRE  1
+        #define CAVE1  2
+        #define CAVE2  3
+        #define CAVE_WALLS1  4
+        #define CAVE_WALLS2  5
+        #define CAVE_STONES  6
+        #define CAVE_FLOOR1  7
+        #define CAVE_FLOOR2  8
 
         // Atualiza a posição do jogador conforme as teclas
         if(g_WKeyPressed)
@@ -485,111 +496,231 @@ int main(int argc, char* argv[])
         if (g_CameraDistance < verysmallnumber)
             g_CameraDistance = verysmallnumber;
 
-        // Desenhamos o modelo da esfera
-        model = Matrix_Translate(-1.0f,0.0f,0.0f)
-              * Matrix_Rotate_Z(0.6f)
-              * Matrix_Rotate_X(0.2f)
-              * Matrix_Rotate_Y(g_AngleY + (float)glfwGetTime() * 0.1f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, SPHERE);
-        DrawVirtualObject("the_sphere");
 
-        // Desenhamos o modelo do coelho
-        model = Matrix_Translate(player_position.x,player_position.y,player_position.z)
-              * Matrix_Scale(0.03f, 0.03f, 0.03f);
+        // TORSO ##############
+        // Translação inicial do torso
+        model = model * Matrix_Translate(player_position.x,player_position.y,player_position.z);
+        // Guardamos matriz model atual na pilha
+        PushMatrix(model);
+            // Atualizamos a matriz model (multiplicação à direita) para fazer um escalamento do torso
+            model = model * Matrix_Scale(0.8f, 1.0f, 0.2f);
+            // Enviamos a matriz "model" para a placa de vídeo (GPU). Veja o
+            // arquivo "shader_vertex.glsl", onde esta é efetivamente
+            // aplicada em todos os pontos.
+            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            // Desenhamos um cubo. Esta renderização irá executar o Vertex
+            // Shader definido no arquivo "shader_vertex.glsl", e o mesmo irá
+            // utilizar as matrizes "model", "view" e "projection" definidas
+            // acima e já enviadas para a placa de vídeo (GPU).
+            DrawCube(render_as_black_uniform); // #### TORSO
+        // Tiramos da pilha a matriz model guardada anteriormente
+        PopMatrix(model);
+
+        // CABEÇA ##############
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+            model = model * Matrix_Translate(0.0f, 0.05f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com uma translação para a cabeça
+            PushMatrix(model); // Guardamos matriz model atual na pilha
+                model = model // Atualizamos matriz model (multiplicação à direita) com a rotação da cabeça
+                      * Matrix_Rotate_Z(g_AngleZ)  // TERCEIRO rotação Z de Euler
+                      * Matrix_Rotate_Y(-g_AngleY)  // SEGUNDO rotação Y de Euler
+                      * Matrix_Rotate_X(-g_AngleX); // PRIMEIRO rotação X de Euler
+                PushMatrix(model); // Guardamos matriz model atual na pilha
+                    model = model * Matrix_Scale(-0.3f, -0.3f, 0.3f); // Atualizamos matriz model (multiplicação à direita) com um escalamento da cabeça
+                    glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                    DrawCube(render_as_black_uniform); // #### CABEÇA // Desenhamos a cabeça
+                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+            PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+
+        // BRACO DIREITO ##############
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+            model = model * Matrix_Translate(-0.55f, 0.0f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com uma translação para o braço direito
+            PushMatrix(model); // Guardamos matriz model atual na pilha
+                model = model // Atualizamos matriz model (multiplicação à direita) com a rotação do braço direito
+                      * Matrix_Rotate_Z(g_AngleZ)  // TERCEIRO rotação Z de Euler
+                      * Matrix_Rotate_Y(g_AngleY)  // SEGUNDO rotação Y de Euler
+                      * Matrix_Rotate_X(g_AngleX); // PRIMEIRO rotação X de Euler
+                PushMatrix(model); // Guardamos matriz model atual na pilha
+                    model = model * Matrix_Scale(0.2f, 0.6f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do braço direito
+                    glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                    DrawCube(render_as_black_uniform); // #### BRAÇO DIREITO // Desenhamos o braço direito
+                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                PushMatrix(model); // Guardamos matriz model atual na pilha
+                    model = model * Matrix_Translate(0.0f, -0.65f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com a translação do antebraço direito
+                    model = model // Atualizamos matriz model (multiplicação à direita) com a rotação do antebraço direito
+                          * Matrix_Rotate_Z(g_ForearmAngleZ)  // SEGUNDO rotação Z de Euler
+                          * Matrix_Rotate_X(g_ForearmAngleX); // PRIMEIRO rotação X de Euler
+                    PushMatrix(model); // Guardamos matriz model atual na pilha
+                        model = model * Matrix_Scale(0.2f, 0.6f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do antebraço direito
+                        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                        DrawCube(render_as_black_uniform); // #### ANTEBRAÇO DIREITO // Desenhamos o antebraço direito
+                    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                    PushMatrix(model); // Guardamos matriz model atual na pilha
+                        model = model * Matrix_Translate(0.0f, -0.65f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com a translação da mão direita
+                        PushMatrix(model); // Guardamos matriz model atual na pilha
+                            model = model * Matrix_Scale(0.2f, 0.1f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com um escalamento da mão direita
+                            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                            DrawCube(render_as_black_uniform); // #### MAO DIREITA // Desenhamos a mão direita
+                        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+            PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+
+        // BRACO ESQUERDO ##############
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+            model = model * Matrix_Translate(0.55f, 0.0f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com uma translação para o braço esquerdo
+            PushMatrix(model); // Guardamos matriz model atual na pilha
+                model = model // Atualizamos matriz model (multiplicação à direita) com a rotação do braço esquerdo
+                      * Matrix_Rotate_Z(-g_AngleZ)  // TERCEIRO rotação Z de Euler
+                      * Matrix_Rotate_Y(g_AngleY)  // SEGUNDO rotação Y de Euler
+                      * Matrix_Rotate_X(g_AngleX); // PRIMEIRO rotação X de Euler
+                PushMatrix(model); // Guardamos matriz model atual na pilha
+                    model = model * Matrix_Scale(0.2f, 0.6f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do braço esquerdo
+                    glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                    DrawCube(render_as_black_uniform); // #### BRAÇO ESQUERDO // Desenhamos o braço esquerdo
+                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                PushMatrix(model); // Guardamos matriz model atual na pilha
+                    model = model * Matrix_Translate(0.0f, -0.65f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com a translação do antebraço esquerdo
+                    model = model // Atualizamos matriz model (multiplicação à direita) com a rotação do antebraço esquerdo
+                          * Matrix_Rotate_Z(-g_ForearmAngleZ)  // SEGUNDO rotação Z de Euler
+                          * Matrix_Rotate_X(g_ForearmAngleX); // PRIMEIRO rotação X de Euler
+                    PushMatrix(model); // Guardamos matriz model atual na pilha
+                        model = model * Matrix_Scale(0.2f, 0.6f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do antebraço esquerdo
+                        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                        DrawCube(render_as_black_uniform); // #### ANTEBRAÇO ESQUERDO // Desenhamos o antebraço esquerdo
+                    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                    PushMatrix(model); // Guardamos matriz model atual na pilha
+                        model = model * Matrix_Translate(0.0f, -0.65f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com a translação da mão esquerda
+                        PushMatrix(model); // Guardamos matriz model atual na pilha
+                            model = model * Matrix_Scale(0.2f, 0.1f, 0.2f); // Atualizamos matriz model (multiplicação à direita) com um escalamento da mão esquerda
+                            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                            DrawCube(render_as_black_uniform); // #### MAO ESQUERDA // Desenhamos a mão esquerda
+                        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+            PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+
+        // PERNA DIREITA ##############
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+            model = model * Matrix_Translate(-0.2f, -1.05f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com uma translação para a perna superior direita
+            PushMatrix(model); // Guardamos matriz model atual na pilha
+                PushMatrix(model); // Guardamos matriz model atual na pilha
+                    model = model * Matrix_Scale(0.3f, 0.7f, 0.3f); // Atualizamos matriz model (multiplicação à direita) com um escalamento da perna superior direita
+                    glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                    DrawCube(render_as_black_uniform); // #### PERNA SUPERIOR DIREITA // Desenhamos a perna superior direita
+                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                PushMatrix(model); // Guardamos matriz model atual na pilha
+                    model = model * Matrix_Translate(0.0f, -0.75f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com a translação da perna inferior direita
+                    PushMatrix(model); // Guardamos matriz model atual na pilha
+                        model = model * Matrix_Scale(0.25f, 0.7f, 0.25f); // Atualizamos matriz model (multiplicação à direita) com um escalamento da perna inferior direita
+                        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                        DrawCube(render_as_black_uniform); // #### PERNA INFERIOR DIREITA // Desenhamos a perna inferior direita
+                    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                    PushMatrix(model); // Guardamos matriz model atual na pilha
+                        model = model * Matrix_Translate(0.0f, -0.75f, 0.1f); // Atualizamos matriz model (multiplicação à direita) com a translação do pé direito
+                        PushMatrix(model); // Guardamos matriz model atual na pilha
+                            model = model * Matrix_Scale(0.2f, 0.1f, 0.5f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do pé direito
+                            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                            DrawCube(render_as_black_uniform); // #### PE DIREITO // Desenhamos o pé direito
+                        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+            PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+
+        // PERNA ESQUERDA ##############
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+            model = model * Matrix_Translate(0.2f, -1.05f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com uma translação para a perna superior esquerda
+            PushMatrix(model); // Guardamos matriz model atual na pilha
+                PushMatrix(model); // Guardamos matriz model atual na pilha
+                    model = model * Matrix_Scale(0.3f, 0.7f, 0.3f); // Atualizamos matriz model (multiplicação à direita) com um escalamento da perna superior esquerda
+                    glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                    DrawCube(render_as_black_uniform); // #### PERNA SUPERIOR ESQUERDA // Desenhamos a perna superior esquerda
+                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                PushMatrix(model); // Guardamos matriz model atual na pilha
+                    model = model * Matrix_Translate(0.0f, -0.75f, 0.0f); // Atualizamos matriz model (multiplicação à direita) com a translação da perna inferior esquerda
+                    PushMatrix(model); // Guardamos matriz model atual na pilha
+                        model = model * Matrix_Scale(0.25f, 0.7f, 0.25f); // Atualizamos matriz model (multiplicação à direita) com um escalamento da perna inferior esquerda
+                        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                        DrawCube(render_as_black_uniform); // #### PERNA INFERIOR ESQUERDA // Desenhamos a perna inferior esquerda
+                    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                    PushMatrix(model); // Guardamos matriz model atual na pilha
+                        model = model * Matrix_Translate(0.0f, -0.75f, 0.1f); // Atualizamos matriz model (multiplicação à direita) com a translação do pé esquerdo
+                        PushMatrix(model); // Guardamos matriz model atual na pilha
+                            model = model * Matrix_Scale(0.2f, 0.1f, 0.5f); // Atualizamos matriz model (multiplicação à direita) com um escalamento do pé esquerdo
+                            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model)); // Enviamos matriz model atual para a GPU
+                            DrawCube(render_as_black_uniform); // #### PE ESQUERDO // Desenhamos o pé esquerdo
+                        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                    PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+                PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+            PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+        PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
+
+        // Desenhamos a fogueira
+        model = Matrix_Translate(0.0f,0.0f,0.0f)
+              * Matrix_Scale(0.02f, 0.02f, 0.02f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, BUNNY);
+        glUniform1i(g_object_id_uniform, CAMPFIRE);
         DrawVirtualObject("Campfire");
 
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
+        // Desenhamos o plano da caverna
+        model = Matrix_Rotate_X(-M_PI_2)
+                * Matrix_Scale(2.0f,2.0f,2.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
+        glUniform1i(g_object_id_uniform, CAVE1);
         DrawVirtualObject("object_0");
 
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
+        // Desenhamos o plano da caverna
+        model = Matrix_Rotate_X(-M_PI_2)
+                * Matrix_Rotate_Z(M_PI)
+                * Matrix_Translate(0.0f,22.0f,0.0f)
+                * Matrix_Scale(2.0f,2.0f,2.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
+        glUniform1i(g_object_id_uniform, CAVE2);
+        DrawVirtualObject("object_0");
+
+        // Desenhamos paredes da caverna
+        model = Matrix_Rotate_X(-M_PI_2)
+                * Matrix_Scale(2.0f,2.0f,2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, CAVE_WALLS1);
         DrawVirtualObject("object_1");
 
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
+        // Desenhamos paredes da caverna
+        model = Matrix_Rotate_X(-M_PI_2)
+                * Matrix_Rotate_Z(M_PI)
+                * Matrix_Translate(0.0f,22.0f,0.0f)
+                * Matrix_Scale(2.0f,2.0f,2.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
+        glUniform1i(g_object_id_uniform, CAVE_WALLS2);
+        DrawVirtualObject("object_1");
+
+        // Desenhamos pedras do meio da caverna
+        model = Matrix_Rotate_X(-M_PI_2)
+                * Matrix_Scale(2.0f,2.0f,2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, CAVE_STONES);
         DrawVirtualObject("object_2");
 
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
+        // Desenhamos o chão da caverna
+        model = Matrix_Rotate_X(-M_PI_2)
+            * Matrix_Translate(0.0f,0.0f,-0.4f)
+            * Matrix_Scale(2.0f,2.0f,2.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
+        glUniform1i(g_object_id_uniform, CAVE_FLOOR1);
         DrawVirtualObject("object_3");
 
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
+        // Desenhamos o chão da caverna
+        model = Matrix_Rotate_X(-M_PI_2)
+                * Matrix_Rotate_Z(M_PI)
+                * Matrix_Translate(0.0f,27.999f,-0.4f)
+                * Matrix_Scale(2.0f,2.0f,2.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("object_4");
+        glUniform1i(g_object_id_uniform, CAVE_FLOOR2);
+        DrawVirtualObject("object_3");
 
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("object_5");
-
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("object_6");
-
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("object_7");
-
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("object_8");
-
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("object_9");
-
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("object_10");
-
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("object_11");
-
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("object_12");
-
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("object_13");
-
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("object_14");
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
@@ -757,6 +888,7 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage0"), 0);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage1"), 1);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage3"), 3);
     glUseProgram(0);
 }
 
@@ -841,6 +973,69 @@ void ComputeNormals(ObjModel* model)
         model->attrib.normals[3*i + 1] = n.y;
         model->attrib.normals[3*i + 2] = n.z;
     }
+}
+
+// Função que desenha um cubo com arestas em preto, definido dentro da função BuildTriangles().
+void DrawCube(GLint render_as_black_uniform)
+{
+    // Informamos para a placa de vídeo (GPU) que a variável booleana
+    // "render_as_black" deve ser colocada como "false". Veja o arquivo
+    // "shader_vertex.glsl".
+    glUniform1i(render_as_black_uniform, false);
+
+    // Pedimos para a GPU rasterizar os vértices do cubo apontados pelo
+    // VAO como triângulos, formando as faces do cubo. Esta
+    // renderização irá executar o Vertex Shader definido no arquivo
+    // "shader_vertex.glsl", e o mesmo irá utilizar as matrizes
+    // "model", "view" e "projection" definidas acima e já enviadas
+    // para a placa de vídeo (GPU).
+    //
+    // Veja a definição de g_VirtualScene["cube_faces"] dentro da
+    // função BuildTriangles(), e veja a documentação da função
+    // glDrawElements() em http://docs.gl/gl3/glDrawElements.
+    glDrawElements(
+        g_VirtualScene["cube_faces"].rendering_mode, // Veja slides 182-188 do documento Aula_04_Modelagem_Geometrica_3D.pdf
+        g_VirtualScene["cube_faces"].num_indices,    //
+        GL_UNSIGNED_INT,
+        (void*)g_VirtualScene["cube_faces"].first_index
+    );
+
+    // Pedimos para OpenGL desenhar linhas com largura de 4 pixels.
+    glLineWidth(4.0f);
+
+    // Pedimos para a GPU rasterizar os vértices dos eixos XYZ
+    // apontados pelo VAO como linhas. Veja a definição de
+    // g_VirtualScene["axes"] dentro da função BuildTriangles(), e veja
+    // a documentação da função glDrawElements() em
+    // http://docs.gl/gl3/glDrawElements.
+    //
+    // Importante: estes eixos serão desenhamos com a matriz "model"
+    // definida acima, e portanto sofrerão as mesmas transformações
+    // geométricas que o cubo. Isto é, estes eixos estarão
+    // representando o sistema de coordenadas do modelo (e não o global)!
+    glDrawElements(
+        g_VirtualScene["axes"].rendering_mode,
+        g_VirtualScene["axes"].num_indices,
+        GL_UNSIGNED_INT,
+        (void*)g_VirtualScene["axes"].first_index
+    );
+
+    // Informamos para a placa de vídeo (GPU) que a variável booleana
+    // "render_as_black" deve ser colocada como "true". Veja o arquivo
+    // "shader_vertex.glsl".
+    glUniform1i(render_as_black_uniform, true);
+
+    // Pedimos para a GPU rasterizar os vértices do cubo apontados pelo
+    // VAO como linhas, formando as arestas pretas do cubo. Veja a
+    // definição de g_VirtualScene["cube_edges"] dentro da função
+    // BuildTriangles(), e veja a documentação da função
+    // glDrawElements() em http://docs.gl/gl3/glDrawElements.
+    glDrawElements(
+        g_VirtualScene["cube_edges"].rendering_mode,
+        g_VirtualScene["cube_edges"].num_indices,
+        GL_UNSIGNED_INT,
+        (void*)g_VirtualScene["cube_edges"].first_index
+    );
 }
 
 // Constrói triângulos para futura renderização a partir de um ObjModel.
@@ -1289,7 +1484,7 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
     // Atualizamos a distância da câmera para a origem utilizando a
     // movimentação da "rodinha", simulando um ZOOM.
-    g_CameraDistance -= 0.1f*yoffset;
+    g_CameraDistance -= 0.2f*yoffset;
 
     // Uma câmera look-at nunca pode estar exatamente "em cima" do ponto para
     // onde ela está olhando, pois isto gera problemas de divisão por zero na
@@ -1512,7 +1707,7 @@ void TextRendering_ShowEulerAngles(GLFWwindow* window)
     float pad = TextRendering_LineHeight(window);
 
     char buffer[80];
-    snprintf(buffer, 80, "Euler Angles rotation matrix = Z(%.2f)*Y(%.2f)*X(%.2f)\n", g_AngleZ, g_AngleY, g_AngleX);
+    snprintf(buffer, 80, "Phi(%.2f),Theta(%.2f)\n", g_CameraPhi, g_CameraTheta);
 
     TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
 }
