@@ -51,17 +51,49 @@
 // Constantes
 #define M_PI   3.14159265358979323846
 #define M_PI_2 1.57079632679489661923
+
+// Identificador que define qual objeto está sendo desenhado no momento
 #define PLAYER 0
 #define CAMPFIRE  1
-#define CAVE1  2
-#define CAVE2  3
-#define CAVE_WALLS1  4
-#define CAVE_WALLS2  5
-#define CAVE_STONES  6
-#define CAVE_FLOOR1  7
-#define CAVE_FLOOR2  8
-#define GREEK1       9
-#define GREEK2       10
+#define FIRE1 2
+#define FIRE2 3
+#define FIRE3 4
+#define FIRE4 5
+#define FIRE5 6
+#define FIRE6 7
+#define FIRE7 8
+#define FIRE8 9
+#define FIRE9 10
+#define FIRE10 11
+#define FIRE11 12
+#define FIRE12 13
+#define FIRE13 14
+#define FIRE14 15
+#define FIRE15 16
+#define FIRE16 17
+#define FIRE17 18
+#define FIRE18 19
+#define FIRE19 20
+#define FIRE20 21
+#define FIRE21 22
+#define FIRE22 23
+#define FIRE23 24
+#define FIRE24 25
+#define FIRE25 26
+#define FIRE26 27
+#define FIRE27 28
+#define FIRE28 29
+#define FIRE29 30
+#define CAVE1  31
+#define CAVE2  32
+#define CAVE_WALLS1  33
+#define CAVE_WALLS2  34
+#define CAVE_STONES  35
+#define CAVE_FLOOR1  36
+#define CAVE_FLOOR2  37
+#define CAVE_TOP  38
+#define GREEK1  39
+#define GREEK2  40
 
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
@@ -215,6 +247,14 @@ bool g_LeftMouseButtonPressed = false;
 bool g_RightMouseButtonPressed = false; // Análogo para botão direito do mouse
 bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mouse
 
+// "g_?KeyPressed = true" se o usuário está com a tecla ?
+// pressionada no momento atual.
+bool g_WKeyPressed = false;
+bool g_AKeyPressed = false;
+bool g_SKeyPressed = false;
+bool g_DKeyPressed = false;
+bool g_COMMAKeyPressed = false;
+bool g_PERIODKeyPressed = false;
 
 // Variáveis que definem a câmera em coordenadas esféricas, controladas pelo
 // usuário através do mouse (veja função CursorPosCallback()). A posição
@@ -222,7 +262,7 @@ bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mous
 // renderização.
 float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
 float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
-float g_CameraDistance = 5.0f; // Distância da câmera para a origem
+float g_CameraDistance = 6.0f; // Distância da câmera para a origem
 
 // Variáveis que controlam rotação do antebraço
 float g_ForearmAngleZ = 0.0f;
@@ -232,12 +272,6 @@ float g_ForearmAngleX = 0.0f;
 float g_TorsoPositionX = 0.0f;
 float g_TorsoPositionY = 0.0f;
 float g_TorsoPositionZ = 0.0f;
-
-
-bool g_W_Pressed = false;
-bool g_A_Pressed = false;
-bool g_S_Pressed = false;
-bool g_D_Pressed = false;
 
 float current_time;
 float delta_t;
@@ -258,9 +292,9 @@ GLint g_bbox_min_uniform;
 GLint g_bbox_max_uniform;
 
 glm::vec4 camera_position_c;
-glm::vec4 camera_lookat_l;  
+glm::vec4 camera_lookat_l;
 glm::vec4 camera_view_vector;
-glm::vec4 camera_up_vector; 
+glm::vec4 camera_up_vector;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
@@ -287,6 +321,8 @@ int main(int argc, char* argv[])
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     #endif
 
+    glfwWindowHint(GLFW_SAMPLES,4); //Multisample anti-aliasing
+    //glfwWindowHint(GLFW_DECORATED, NULL); //Remove as bordas da janela
     // Pedimos para utilizar o perfil "core", isto é, utilizaremos somente as
     // funções modernas de OpenGL.
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -294,7 +330,12 @@ int main(int argc, char* argv[])
     // Criamos uma janela do sistema operacional, com 800 colunas e 600 linhas
     // de pixels, e com título "INF01047 ...".
     GLFWwindow* window;
-    window = glfwCreateWindow(800, 600, "Mith of the cave", NULL, NULL);
+    window = glfwCreateWindow(800, 600, "Myth of the Cave", NULL, NULL);
+
+    //window = glfwCreateWindow(glfwGetVideoMode(glfwGetPrimaryMonitor())->width,
+    //                          glfwGetVideoMode(glfwGetPrimaryMonitor())->height,
+    //                          "Myth of the Cave", glfwGetPrimaryMonitor(), NULL); // Full screen
+
     if (!window)
     {
         glfwTerminate();
@@ -323,7 +364,11 @@ int main(int argc, char* argv[])
     // redimensionada, por consequência alterando o tamanho do "framebuffer"
     // (região de memória onde são armazenados os pixels da imagem).
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
-    FramebufferSizeCallback(window, 800, 600); // Forçamos a chamada do callback acima, para definir g_ScreenRatio.
+    FramebufferSizeCallback(window,800,600); // Forçamos a chamada do callback acima, para definir g_ScreenRatio.
+
+    //FramebufferSizeCallback(window,
+    //                        glfwGetVideoMode(glfwGetPrimaryMonitor())->width,
+    //                        glfwGetVideoMode(glfwGetPrimaryMonitor())->height); // Forçamos a chamada do callback acima, para definir g_ScreenRatio.
 
     // Imprimimos no terminal informações sobre a GPU do sistema
     const GLubyte *vendor      = glGetString(GL_VENDOR);
@@ -346,7 +391,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/RGB_6c497cd7818a44f79491a2e4a0e8c8af_07_aristotle_head.tga.png"); // TextureImage4
     LoadTextureImage("../../data/RGB_a667b4b148b141cbbe618925eb411f31_07_aristotle_body.tga.png"); // TextureImage5
     LoadTextureImage("../../data/Campfire_fire_MAT_BaseColor_Alpha.png"); // TextureImage6
-    LoadTextureImage("../../data/RGB_e9023efb00694b1e85361bb1f84f81dd_11922_NewCave_lambert1_AlbedoTransparency.jpeg"); // TextureImage7
+    LoadTextureImage("../../data/RGB_e9023efb00694b1e85361bb1f84f81dd_11922_NewCave_lambert1_AlbedoTransparency-JBMiO79k7-transformed.jpeg"); // TextureImage7
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
@@ -440,9 +485,9 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -100.0f; // Posição do "far plane"
+        float farplane  = -200.0f; // Posição do "far plane"
 
-        
+
         // Projeção Perspectiva.
         // Para definição do field of view (FOV), veja slides 205-215 do documento Aula_09_Projecoes.pdf.
         float field_of_view = 3.141592 / 3.0f;
@@ -493,48 +538,6 @@ int main(int argc, char* argv[])
         #define CAVE_FLOOR1  36
         #define CAVE_FLOOR2  37
         #define CAVE_TOP  38
-
-        // Atualiza a posição do jogador conforme as teclas
-        if(g_WKeyPressed)
-        {
-            player_position.z -= speed*delta_t;
-
-            // Atualizamos a distância da câmera para o jogador
-            //g_CameraDistance -= 0.1f;
-
-        }
-        if(g_AKeyPressed)
-        {
-            player_position.x -= speed*delta_t;
-        }
-        if(g_SKeyPressed)
-        {
-            player_position.z += speed*delta_t;
-
-            // Atualizamos a distância da câmera para o jogador
-            //g_CameraDistance += 0.1f;
-        }
-        if(g_DKeyPressed)
-        {
-            player_position.x += speed*delta_t;
-        }
-        if(g_COMMAKeyPressed)
-        {
-            player_position.y -= speed*delta_t;
-        }
-        if(g_PERIODKeyPressed)
-        {
-            player_position.y += speed*delta_t;
-        }
-
-        // Uma câmera look-at nunca pode estar exatamente "em cima" do ponto para
-        // onde ela está olhando, pois isto gera problemas de divisão por zero na
-        // definição do sistema de coordenadas da câmera. Isto é, a variável abaixo
-        // nunca pode ser zero. Versões anteriores deste código possuíam este bug,
-        // o qual foi detectado pelo aluno Vinicius Fraga (2017/2).
-        const float verysmallnumber = std::numeric_limits<float>::epsilon();
-        if (g_CameraDistance < verysmallnumber)
-            g_CameraDistance = verysmallnumber;
 
         glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
 
@@ -604,8 +607,8 @@ int main(int argc, char* argv[])
         DrawVirtualObject("object_3");
 
         // Desenhamos o teto da caverna
-        model = Matrix_Scale(8.0f,8.0f,8.0f)
-                * Matrix_Translate(0.0f,20.0f,0.0f);
+        model = Matrix_Translate(-75.0f,-10.0f,0.0f)
+                * Matrix_Scale(80.0f,80.0f,80.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, CAVE_TOP);
         DrawVirtualObject("cavetop_1");
@@ -739,6 +742,7 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, FIRE29);
         DrawVirtualObject("fire_part_28");
+
 
         // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
         TextRendering_ShowProjection(window);
@@ -905,8 +909,8 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage3"), 3);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage4"), 4);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 6);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 7);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage6"), 6);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage7"), 7);
     glUseProgram(0);
 }
 
@@ -1469,28 +1473,58 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
 
-    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ){
-        g_W_Pressed = true;
-    }else{
-        g_W_Pressed = false;
+    // Se o usuário apertar a tecla W, movimentamos a câmera para frente.
+    if ( (key == GLFW_KEY_W || key == GLFW_KEY_UP) && action == GLFW_PRESS)
+    {
+        g_WKeyPressed = true;
+    }
+    else if( (key == GLFW_KEY_W || key == GLFW_KEY_UP) && action == GLFW_RELEASE){
+        g_WKeyPressed = false;
     }
 
-    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ){
-        g_A_Pressed = true;
-    }else{
-        g_A_Pressed = false;
+    // Se o usuário apertar a tecla A, movimentamos a câmera para a esquerda.
+    if ( (key == GLFW_KEY_A || key == GLFW_KEY_LEFT) && action == GLFW_PRESS )
+    {
+        g_AKeyPressed = true;
+    }
+    else if( (key == GLFW_KEY_A || key == GLFW_KEY_LEFT) && action == GLFW_RELEASE){
+        g_AKeyPressed = false;
     }
 
-    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ){
-        g_S_Pressed = true;
-    }else{
-        g_S_Pressed = false;
+    // Se o usuário apertar a tecla S, movimentamos a câmera para trás.
+    if ( (key == GLFW_KEY_S || key == GLFW_KEY_DOWN) && action == GLFW_PRESS)
+    {
+        g_SKeyPressed = true;
+    }
+    else if( (key == GLFW_KEY_S || key == GLFW_KEY_DOWN) && action == GLFW_RELEASE){
+        g_SKeyPressed = false;
     }
 
-    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS ){
-        g_D_Pressed = true;
-    }else{
-        g_D_Pressed = false;
+    // Se o usuário apertar a tecla D, movimentamos a câmera para a direita.
+    if ( (key == GLFW_KEY_D || key == GLFW_KEY_RIGHT) && action == GLFW_PRESS)
+    {
+        g_DKeyPressed = true;
+    }
+    else if( (key == GLFW_KEY_D || key == GLFW_KEY_RIGHT) && action == GLFW_RELEASE){
+        g_DKeyPressed = false;
+    }
+
+    // Se o usuário apertar a tecla ",", movimentamos a câmera para cima.
+    if (key == GLFW_KEY_COMMA && action == GLFW_PRESS)
+    {
+        g_COMMAKeyPressed = true;
+    }
+    else if(key == GLFW_KEY_COMMA && action == GLFW_RELEASE){
+        g_COMMAKeyPressed = false;
+    }
+
+    // Se o usuário apertar a tecla ".", movimentamos a câmera para baixo.
+    if (key == GLFW_KEY_PERIOD && action == GLFW_PRESS)
+    {
+        g_PERIODKeyPressed = true;
+    }
+    else if(key == GLFW_KEY_PERIOD && action == GLFW_RELEASE){
+        g_PERIODKeyPressed = false;
     }
 
 
@@ -2117,44 +2151,35 @@ void AdicionaJogador(){
     glBindVertexArray(vertex_array_object_id);
 
     // Translação inicial do torso
-    model = model * Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ);
-    model = model * Matrix_Rotate_Y(camera_view_vector.z <= 0 ? M_PI/2 + g_AngleY_torso : M_PI/2 - g_AngleY_torso); // rotação Y de Euler
+    model = model * Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ)
+        * Matrix_Rotate_Y(camera_view_vector.z <= 0 ? M_PI/2 + g_AngleY_torso : M_PI/2 - g_AngleY_torso); // rotação Y de Euler
     //model = model * Matrix_Scale(g_AngleX_leg, 1.0f, 1.0f);
 
-    PushMatrix(model);
-        // Desenhamos o chão da caverna
-        model = model
-            * Matrix_Rotate_X(-M_PI_2)
-            * Matrix_Rotate_Z(-M_PI_2)
-            * Matrix_Scale(0.02f,0.02f,0.02f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, GREEK1);
-        DrawVirtualObject("greek_0");
-    PopMatrix(model);
+    // Desenhamos o jogador
+    model = model
+        * Matrix_Rotate_X(-M_PI_2)
+        * Matrix_Rotate_Z(-M_PI_2)
+        * Matrix_Scale(0.02f,0.02f,0.02f);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, GREEK1);
+    DrawVirtualObject("greek_0");
 
-    PushMatrix(model);
-        // Desenhamos o chão da caverna
-        model = model
-            * Matrix_Rotate_X(-M_PI_2)
-            * Matrix_Rotate_Z(-M_PI_2)
-            * Matrix_Scale(0.02f,0.02f,0.02f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, GREEK2);
-        DrawVirtualObject("greek_1");
-    PopMatrix(model);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, GREEK2);
+    DrawVirtualObject("greek_1");
 }
 
 void MovimentaPersonagem(){
     float angle_45 = M_PI / 4;
 
 
-    if(g_AngleX_leg > angle_45){ 
+    if(g_AngleX_leg > angle_45){
         movement_AngleX_leg = true;
     }
-    if(g_AngleX_leg < -angle_45){ 
+    if(g_AngleX_leg < -angle_45){
         movement_AngleX_leg = false;
     }
-    if(g_W_Pressed == true || g_S_Pressed == true){
+    if(g_WKeyPressed == true || g_SKeyPressed == true){
         g_AngleX_leg = g_AngleX_leg + (movement_AngleX_leg ? -speed * delta_t : speed * delta_t);
     }
 
@@ -2163,25 +2188,59 @@ void MovimentaPersonagem(){
     glm::vec4 plano_Z   = glm::vec4(camera_lookat_l.x, camera_lookat_l.y, camera_lookat_l.z + 1.0f, 1.0f) - camera_lookat_l;
     glm::vec4 view_aux  = glm::vec4(camera_view_vector.x, 0.0f, camera_view_vector.z, 0.0f);
 
-    float angulo_X = acos(dotproduct(plano_X, view_aux) / (norm(plano_X) * norm(view_aux)));
-    float angulo_Z = acos(dotproduct(plano_Z, view_aux) / (norm(plano_Z) * norm(view_aux)));
+    float angulo_X = dotproduct(plano_X, view_aux) / (norm(plano_X) * norm(view_aux));
+    float angulo_Z = dotproduct(plano_Z, view_aux) / (norm(plano_Z) * norm(view_aux));
+
+    // Erro: função acos(x) retorna NaN (Not a Number) para -1 > x or x > 1
+    if(angulo_X < -1.0f)
+    {
+        angulo_X = acos(-1.0f);
+    }
+    else if(angulo_X > 1.0f)
+    {
+        angulo_X = acos(1.0f);
+    }
+    else{
+        angulo_X = acos(angulo_X);
+    }
+
+    if(angulo_Z < -1.0f)
+    {
+        angulo_Z = acos(-1.0f);
+    }
+    else if(angulo_Z > 1.0f)
+    {
+        angulo_Z = acos(1.0f);
+    }
+    else{
+        angulo_Z = acos(angulo_Z);
+    }
+
     g_AngleY_torso = angulo_X;
-   
+
     //------------------------------------------------------
 
-    if(g_W_Pressed == true){
+    if(g_WKeyPressed == true){
         g_TorsoPositionZ = g_TorsoPositionZ + cos(angulo_Z) * speed * delta_t;
         g_TorsoPositionX = g_TorsoPositionX + cos(angulo_X) * speed * delta_t;
     }
-    else if(g_S_Pressed == true){
+    if(g_SKeyPressed == true){
         g_TorsoPositionZ = g_TorsoPositionZ - cos(angulo_Z) * speed * delta_t;
         g_TorsoPositionX = g_TorsoPositionX - cos(angulo_X) * speed * delta_t;
     }
-    if(g_A_Pressed == true){
+    if(g_AKeyPressed == true){
        g_CameraTheta = g_CameraTheta + speed * delta_t;
     }
-    else if(g_D_Pressed == true){
+    if(g_DKeyPressed == true){
        g_CameraTheta = g_CameraTheta - speed * delta_t;
+    }
+    if(g_COMMAKeyPressed == true)
+    {
+        g_TorsoPositionY -= speed*delta_t;
+    }
+    if(g_PERIODKeyPressed == true)
+    {
+        g_TorsoPositionY += speed*delta_t;
     }
 }
 

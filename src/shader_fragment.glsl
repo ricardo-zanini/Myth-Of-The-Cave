@@ -21,7 +21,6 @@ uniform mat4 projection;
 // Identificador que define qual objeto está sendo desenhado no momento
 #define PLAYER 0
 #define CAMPFIRE  1
-<<<<<<< HEAD
 #define FIRE1 2
 #define FIRE2 3
 #define FIRE3 4
@@ -59,18 +58,8 @@ uniform mat4 projection;
 #define CAVE_FLOOR1  36
 #define CAVE_FLOOR2  37
 #define CAVE_TOP  38
-=======
-#define CAVE1  2
-#define CAVE2  3
-#define CAVE_WALLS1  4
-#define CAVE_WALLS2  5
-#define CAVE_STONES  6
-#define CAVE_FLOOR1  7
-#define CAVE_FLOOR2  8
-#define GREEK1       9
-#define GREEK2       10
-
->>>>>>> 70c3ee61c2ac94d0d877d2a1ece1e78e3538385f
+#define GREEK1  39
+#define GREEK2  40
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -84,6 +73,8 @@ uniform sampler2D TextureImage2;
 uniform sampler2D TextureImage3;
 uniform sampler2D TextureImage4;
 uniform sampler2D TextureImage5;
+uniform sampler2D TextureImage6;
+uniform sampler2D TextureImage7;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -169,6 +160,8 @@ void main()
     vec3 Kd3 = texture(TextureImage3, vec2(U,V)).rgb;
     vec3 Kd4 = texture(TextureImage4, vec2(U,V)).rgb;
     vec3 Kd5 = texture(TextureImage5, vec2(U,V)).rgb;
+    vec3 Kd6 = texture(TextureImage6, vec2(U,V)).rgb;
+    vec3 Kd7 = texture(TextureImage7, vec2(U,V)).rgb;
 
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
@@ -187,7 +180,7 @@ void main()
                 || object_id == FIRE19 || object_id == FIRE20 || object_id == FIRE21 || object_id == FIRE22 || object_id == FIRE23 || object_id == FIRE24
                  || object_id == FIRE25 || object_id == FIRE26 || object_id == FIRE27 || object_id == FIRE28 || object_id == FIRE29 )
     {
-        color.rgb = Kd4 * (lambert + 0.01);
+        color.rgb = Kd6 * (lambert + 0.01);
     }
     else if ( object_id == CAVE1 || object_id == CAVE2 || object_id == CAVE_WALLS1 || object_id == CAVE_WALLS2 )
     {
@@ -201,12 +194,10 @@ void main()
     {
         color.rgb = Kd3 * (lambert + 0.01);
     }
-<<<<<<< HEAD
     else if ( object_id == CAVE_TOP )
     {
-        color.rgb = Kd5 * (lambert + 0.01);
+        color.rgb = Kd7 * (lambert + 0.01);
     }
-=======
     else if ( object_id == GREEK1)
     {
         color.rgb = Kd5 * (lambert + 0.01);
@@ -216,7 +207,6 @@ void main()
         color.rgb = Kd4 * (lambert + 0.01);
     }
 
->>>>>>> 70c3ee61c2ac94d0d877d2a1ece1e78e3538385f
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
     // necessário:
