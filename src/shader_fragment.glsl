@@ -28,6 +28,9 @@ uniform mat4 projection;
 #define CAVE_STONES  6
 #define CAVE_FLOOR1  7
 #define CAVE_FLOOR2  8
+#define GREEK1       9
+#define GREEK2       10
+
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -39,6 +42,8 @@ uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
 uniform sampler2D TextureImage3;
+uniform sampler2D TextureImage4;
+uniform sampler2D TextureImage5;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -122,6 +127,8 @@ void main()
     vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
     vec3 Kd2 = texture(TextureImage2, vec2(U,V)).rgb;
     vec3 Kd3 = texture(TextureImage3, vec2(U,V)).rgb;
+    vec3 Kd4 = texture(TextureImage4, vec2(U,V)).rgb;
+    vec3 Kd5 = texture(TextureImage5, vec2(U,V)).rgb;
 
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
@@ -146,6 +153,15 @@ void main()
     {
         color.rgb = Kd3 * (lambert + 0.01);
     }
+    else if ( object_id == GREEK1)
+    {
+        color.rgb = Kd5 * (lambert + 0.01);
+    }
+    else if ( object_id == GREEK2)
+    {
+        color.rgb = Kd4 * (lambert + 0.01);
+    }
+
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
     // necessário:
