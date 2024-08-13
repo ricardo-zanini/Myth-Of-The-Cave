@@ -21,6 +21,7 @@ uniform mat4 projection;
 // Identificador que define qual objeto está sendo desenhado no momento
 #define PLAYER 0
 #define CAMPFIRE  1
+<<<<<<< HEAD
 #define FIRE1 2
 #define FIRE2 3
 #define FIRE3 4
@@ -58,6 +59,18 @@ uniform mat4 projection;
 #define CAVE_FLOOR1  36
 #define CAVE_FLOOR2  37
 #define CAVE_TOP  38
+=======
+#define CAVE1  2
+#define CAVE2  3
+#define CAVE_WALLS1  4
+#define CAVE_WALLS2  5
+#define CAVE_STONES  6
+#define CAVE_FLOOR1  7
+#define CAVE_FLOOR2  8
+#define GREEK1       9
+#define GREEK2       10
+
+>>>>>>> 70c3ee61c2ac94d0d877d2a1ece1e78e3538385f
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -188,10 +201,22 @@ void main()
     {
         color.rgb = Kd3 * (lambert + 0.01);
     }
+<<<<<<< HEAD
     else if ( object_id == CAVE_TOP )
     {
         color.rgb = Kd5 * (lambert + 0.01);
     }
+=======
+    else if ( object_id == GREEK1)
+    {
+        color.rgb = Kd5 * (lambert + 0.01);
+    }
+    else if ( object_id == GREEK2)
+    {
+        color.rgb = Kd4 * (lambert + 0.01);
+    }
+
+>>>>>>> 70c3ee61c2ac94d0d877d2a1ece1e78e3538385f
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
     // necessário:
