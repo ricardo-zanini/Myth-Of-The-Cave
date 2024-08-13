@@ -312,10 +312,12 @@ int main(int argc, char* argv[])
     LoadShadersFromFiles();
 
     // Carregamos duas imagens para serem utilizadas como textura
-    LoadTextureImage("../../data/Campfire_MAT_BaseColor_01.jpg");      // TextureImage0
+    LoadTextureImage("../../data/Campfire_MAT_BaseColor_01.jpg"); // TextureImage0
     LoadTextureImage("../../data/RGB_e34762cfafeb488aa5ba2f697743a0bc_Rock_Kit_C.png"); // TextureImage1
     LoadTextureImage("../../data/RGB_cca3c218b0804ccbb342b292cff1defb_Rock_Kit_01_C.png"); // TextureImage2
     LoadTextureImage("../../data/cave-floor-rock_albedo.png"); // TextureImage3
+    LoadTextureImage("../../data/Campfire_fire_MAT_BaseColor_Alpha.png"); // TextureImage4
+    LoadTextureImage("../../data/RGB_e9023efb00694b1e85361bb1f84f81dd_11922_NewCave_lambert1_AlbedoTransparency.jpeg"); // TextureImage5
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel cavemodel("../../data/cave.obj");
@@ -326,9 +328,9 @@ int main(int argc, char* argv[])
     ComputeNormals(&campfiremodel);
     BuildTrianglesAndAddToVirtualScene(&campfiremodel);
 
-    ObjModel planemodel("../../data/plane.obj");
-    ComputeNormals(&planemodel);
-    BuildTrianglesAndAddToVirtualScene(&planemodel);
+    ObjModel cavetopmodel("../../data/cavetop.obj");
+    ComputeNormals(&cavetopmodel);
+    BuildTrianglesAndAddToVirtualScene(&cavetopmodel);
 
     if ( argc > 1 )
     {
@@ -372,7 +374,7 @@ int main(int argc, char* argv[])
         // Conversaremos sobre sistemas de cores nas aulas de Modelos de Iluminação.
         //
         //           R     G     B     A
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClearColor(0.037f,0.197f,0.223f,0.0f);
 
         // "Pintamos" todos os pixels do framebuffer com a cor definida acima,
         // e também resetamos todos os pixels do Z-buffer (depth buffer).
@@ -413,7 +415,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -60.0f; // Posição do "far plane"
+        float farplane  = -100.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -436,8 +438,6 @@ int main(int argc, char* argv[])
             projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
         }
 
-        glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
-
         // Enviamos as matrizes "view" e "projection" para a placa de vídeo
         // (GPU). Veja o arquivo "shader_vertex.glsl", onde estas são
         // efetivamente aplicadas em todos os pontos.
@@ -446,13 +446,43 @@ int main(int argc, char* argv[])
 
         #define PLAYER 0
         #define CAMPFIRE  1
-        #define CAVE1  2
-        #define CAVE2  3
-        #define CAVE_WALLS1  4
-        #define CAVE_WALLS2  5
-        #define CAVE_STONES  6
-        #define CAVE_FLOOR1  7
-        #define CAVE_FLOOR2  8
+        #define FIRE1 2
+        #define FIRE2 3
+        #define FIRE3 4
+        #define FIRE4 5
+        #define FIRE5 6
+        #define FIRE6 7
+        #define FIRE7 8
+        #define FIRE8 9
+        #define FIRE9 10
+        #define FIRE10 11
+        #define FIRE11 12
+        #define FIRE12 13
+        #define FIRE13 14
+        #define FIRE14 15
+        #define FIRE15 16
+        #define FIRE16 17
+        #define FIRE17 18
+        #define FIRE18 19
+        #define FIRE19 20
+        #define FIRE20 21
+        #define FIRE21 22
+        #define FIRE22 23
+        #define FIRE23 24
+        #define FIRE24 25
+        #define FIRE25 26
+        #define FIRE26 27
+        #define FIRE27 28
+        #define FIRE28 29
+        #define FIRE29 30
+        #define CAVE1  31
+        #define CAVE2  32
+        #define CAVE_WALLS1  33
+        #define CAVE_WALLS2  34
+        #define CAVE_STONES  35
+        #define CAVE_FLOOR1  36
+        #define CAVE_FLOOR2  37
+        #define CAVE_TOP  38
 
         // Atualiza a posição do jogador conforme as teclas
         if(g_WKeyPressed)
@@ -495,6 +525,11 @@ int main(int argc, char* argv[])
         const float verysmallnumber = std::numeric_limits<float>::epsilon();
         if (g_CameraDistance < verysmallnumber)
             g_CameraDistance = verysmallnumber;
+
+        glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
+
+
+        //----------------------------- JOGADOR ------------------------------------------
 
 
         // TORSO ##############
@@ -658,12 +693,9 @@ int main(int argc, char* argv[])
             PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
         PopMatrix(model); // Tiramos da pilha a matriz model guardada anteriormente
 
-        // Desenhamos a fogueira
-        model = Matrix_Translate(0.0f,0.0f,0.0f)
-              * Matrix_Scale(0.02f, 0.02f, 0.02f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, CAMPFIRE);
-        DrawVirtualObject("Campfire");
+
+        //----------------------------- CAVERNA ------------------------------------------
+
 
         // Desenhamos o plano da caverna
         model = Matrix_Rotate_X(-M_PI_2)
@@ -672,7 +704,6 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, CAVE1);
         DrawVirtualObject("object_0");
 
-        // Desenhamos o plano da caverna
         model = Matrix_Rotate_X(-M_PI_2)
                 * Matrix_Rotate_Z(M_PI)
                 * Matrix_Translate(0.0f,22.0f,0.0f)
@@ -688,7 +719,6 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, CAVE_WALLS1);
         DrawVirtualObject("object_1");
 
-        // Desenhamos paredes da caverna
         model = Matrix_Rotate_X(-M_PI_2)
                 * Matrix_Rotate_Z(M_PI)
                 * Matrix_Translate(0.0f,22.0f,0.0f)
@@ -712,7 +742,6 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, CAVE_FLOOR1);
         DrawVirtualObject("object_3");
 
-        // Desenhamos o chão da caverna
         model = Matrix_Rotate_X(-M_PI_2)
                 * Matrix_Rotate_Z(M_PI)
                 * Matrix_Translate(0.0f,27.999f,-0.4f)
@@ -720,6 +749,143 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, CAVE_FLOOR2);
         DrawVirtualObject("object_3");
+
+        // Desenhamos o teto da caverna
+        model = Matrix_Scale(8.0f,8.0f,8.0f)
+                * Matrix_Translate(0.0f,20.0f,0.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, CAVE_TOP);
+        DrawVirtualObject("cavetop_1");
+
+
+        //----------------------------- FOGUEIRA ------------------------------------------
+
+        // Desenhamos a fogueira
+        model = Matrix_Translate(0.0f,0.0f,0.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, CAMPFIRE);
+        DrawVirtualObject("Campfire");
+
+        // Permite o desenho de objetos transparentes
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Desenhamos 28 partes do fogo
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE1);
+        DrawVirtualObject("fire_part_00");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE2);
+        DrawVirtualObject("fire_part_01");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE3);
+        DrawVirtualObject("fire_part_02");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE4);
+        DrawVirtualObject("fire_part_03");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE5);
+        DrawVirtualObject("fire_part_04");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE6);
+        DrawVirtualObject("fire_part_05");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE7);
+        DrawVirtualObject("fire_part_06");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE8);
+        DrawVirtualObject("fire_part_07");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE9);
+        DrawVirtualObject("fire_part_08");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE10);
+        DrawVirtualObject("fire_part_09");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE11);
+        DrawVirtualObject("fire_part_10");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE12);
+        DrawVirtualObject("fire_part_11");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE13);
+        DrawVirtualObject("fire_part_12");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE14);
+        DrawVirtualObject("fire_part_13");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE15);
+        DrawVirtualObject("fire_part_14");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE16);
+        DrawVirtualObject("fire_part_15");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE17);
+        DrawVirtualObject("fire_part_16");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE18);
+        DrawVirtualObject("fire_part_17");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE19);
+        DrawVirtualObject("fire_part_18");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE20);
+        DrawVirtualObject("fire_part_19");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE21);
+        DrawVirtualObject("fire_part_20");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE22);
+        DrawVirtualObject("fire_part_21");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE23);
+        DrawVirtualObject("fire_part_22");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE24);
+        DrawVirtualObject("fire_part_23");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE25);
+        DrawVirtualObject("fire_part_24");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE26);
+        DrawVirtualObject("fire_part_25");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE27);
+        DrawVirtualObject("fire_part_26");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE28);
+        DrawVirtualObject("fire_part_27");
+
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FIRE29);
+        DrawVirtualObject("fire_part_28");
 
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
@@ -889,6 +1055,8 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage1"), 1);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage3"), 3);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage4"), 4);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
     glUseProgram(0);
 }
 

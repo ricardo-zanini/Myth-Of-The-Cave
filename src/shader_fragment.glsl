@@ -21,13 +21,43 @@ uniform mat4 projection;
 // Identificador que define qual objeto está sendo desenhado no momento
 #define PLAYER 0
 #define CAMPFIRE  1
-#define CAVE1  2
-#define CAVE2  3
-#define CAVE_WALLS1  4
-#define CAVE_WALLS2  5
-#define CAVE_STONES  6
-#define CAVE_FLOOR1  7
-#define CAVE_FLOOR2  8
+#define FIRE1 2
+#define FIRE2 3
+#define FIRE3 4
+#define FIRE4 5
+#define FIRE5 6
+#define FIRE6 7
+#define FIRE7 8
+#define FIRE8 9
+#define FIRE9 10
+#define FIRE10 11
+#define FIRE11 12
+#define FIRE12 13
+#define FIRE13 14
+#define FIRE14 15
+#define FIRE15 16
+#define FIRE16 17
+#define FIRE17 18
+#define FIRE18 19
+#define FIRE19 20
+#define FIRE20 21
+#define FIRE21 22
+#define FIRE22 23
+#define FIRE23 24
+#define FIRE24 25
+#define FIRE25 26
+#define FIRE26 27
+#define FIRE27 28
+#define FIRE28 29
+#define FIRE29 30
+#define CAVE1  31
+#define CAVE2  32
+#define CAVE_WALLS1  33
+#define CAVE_WALLS2  34
+#define CAVE_STONES  35
+#define CAVE_FLOOR1  36
+#define CAVE_FLOOR2  37
+#define CAVE_TOP  38
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -39,6 +69,8 @@ uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
 uniform sampler2D TextureImage3;
+uniform sampler2D TextureImage4;
+uniform sampler2D TextureImage5;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -122,6 +154,8 @@ void main()
     vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
     vec3 Kd2 = texture(TextureImage2, vec2(U,V)).rgb;
     vec3 Kd3 = texture(TextureImage3, vec2(U,V)).rgb;
+    vec3 Kd4 = texture(TextureImage4, vec2(U,V)).rgb;
+    vec3 Kd5 = texture(TextureImage5, vec2(U,V)).rgb;
 
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
@@ -134,6 +168,14 @@ void main()
     {
         color.rgb = Kd0 * (lambert + 0.01);
     }
+    else if ( object_id == FIRE1 || object_id == FIRE2 || object_id == FIRE3 || object_id == FIRE4 || object_id == FIRE5 || object_id == FIRE6
+              || object_id == FIRE7 || object_id == FIRE8 || object_id == FIRE9 || object_id == FIRE10 || object_id == FIRE11 || object_id == FIRE12
+               || object_id == FIRE13 || object_id == FIRE14 || object_id == FIRE15 || object_id == FIRE16 || object_id == FIRE17 || object_id == FIRE18
+                || object_id == FIRE19 || object_id == FIRE20 || object_id == FIRE21 || object_id == FIRE22 || object_id == FIRE23 || object_id == FIRE24
+                 || object_id == FIRE25 || object_id == FIRE26 || object_id == FIRE27 || object_id == FIRE28 || object_id == FIRE29 )
+    {
+        color.rgb = Kd4 * (lambert + 0.01);
+    }
     else if ( object_id == CAVE1 || object_id == CAVE2 || object_id == CAVE_WALLS1 || object_id == CAVE_WALLS2 )
     {
         color.rgb = Kd1 * (lambert + 0.01);
@@ -145,6 +187,10 @@ void main()
     else if ( object_id == CAVE_FLOOR1 || object_id == CAVE_FLOOR2 )
     {
         color.rgb = Kd3 * (lambert + 0.01);
+    }
+    else if ( object_id == CAVE_TOP )
+    {
+        color.rgb = Kd5 * (lambert + 0.01);
     }
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
