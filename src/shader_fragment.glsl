@@ -13,53 +13,32 @@ in vec4 position_model;
 // Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
 in vec2 texcoords;
 
+in vec3 tangent;
+in vec3 bitangent;
+in vec3 crossEdge;
+
 // Matrizes computadas no código C++ e enviadas para a GPU
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
 // Identificador que define qual objeto está sendo desenhado no momento
-#define PLAYER 0
-#define CAMPFIRE  1
-#define FIRE1 2
-#define FIRE2 3
-#define FIRE3 4
-#define FIRE4 5
-#define FIRE5 6
-#define FIRE6 7
-#define FIRE7 8
-#define FIRE8 9
-#define FIRE9 10
-#define FIRE10 11
-#define FIRE11 12
-#define FIRE12 13
-#define FIRE13 14
-#define FIRE14 15
-#define FIRE15 16
-#define FIRE16 17
-#define FIRE17 18
-#define FIRE18 19
-#define FIRE19 20
-#define FIRE20 21
-#define FIRE21 22
-#define FIRE22 23
-#define FIRE23 24
-#define FIRE24 25
-#define FIRE25 26
-#define FIRE26 27
-#define FIRE27 28
-#define FIRE28 29
-#define FIRE29 30
-#define CAVE1  31
-#define CAVE2  32
-#define CAVE_WALLS1  33
-#define CAVE_WALLS2  34
-#define CAVE_STONES  35
-#define CAVE_FLOOR1  36
-#define CAVE_FLOOR2  37
-#define CAVE_TOP  38
-#define GREEK1  39
-#define GREEK2  40
+#define CAMPFIRE  0
+#define FIRE 1
+#define CAVE 2
+#define CAVE_WALLS 3
+#define CAVE_FLOOR 4
+#define GRUTA_BASE 5
+#define GREEK_BODY 6
+#define GREEK_HEAD 7
+#define TITLE 8
+#define PRISIONER 9
+#define PRISIONER_EYES 10
+#define PRISIONER_TEETH 11
+#define PRISIONER_ROCK 12
+#define PRISIONER_CHAIN 13
+#define LADDER 14
+#define GREEK2 15
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -67,14 +46,30 @@ uniform vec4 bbox_min;
 uniform vec4 bbox_max;
 
 // Variáveis para acesso das imagens de textura
-uniform sampler2D TextureImage0;
-uniform sampler2D TextureImage1;
-uniform sampler2D TextureImage2;
-uniform sampler2D TextureImage3;
-uniform sampler2D TextureImage4;
-uniform sampler2D TextureImage5;
-uniform sampler2D TextureImage6;
-uniform sampler2D TextureImage7;
+uniform sampler2D TextureImageCampfire;
+uniform sampler2D TextureNormalCampfire;
+uniform sampler2D TextureImageFire;
+uniform sampler2D TextureImageCaveWalls;
+uniform sampler2D TextureNormalCaveWalls;
+uniform sampler2D TextureImageCaveFloor;
+uniform sampler2D TextureNormalCaveFloor;
+uniform sampler2D TextureImageGruta;
+uniform sampler2D TexturNormalGruta;
+uniform sampler2D TextureImageGreekBody;
+uniform sampler2D TextureImageGreekHead;
+uniform sampler2D TextureImageTitle;
+uniform sampler2D TextureImagePrisioner;
+uniform sampler2D TextureNormalPrisioner;
+uniform sampler2D TextureImagePrisionerEyes;
+uniform sampler2D TextureImagePrisionerTeeth;
+uniform sampler2D TextureImagePrisionerRock;
+uniform sampler2D TextureNormalPrisionerRock;
+uniform sampler2D TextureImagePrisionerChain;
+uniform sampler2D TextureNormalPrisionerChain;
+uniform sampler2D TextureImageLadder;
+uniform sampler2D TextureNormalLadder;
+uniform sampler2D TextureImageGreek2;
+uniform sampler2D TextureNormalGreek2;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -85,6 +80,19 @@ out vec4 color;
 
 void main()
 {
+    //------------------------------- FONTE: https://github.com/VictorGordan/opengl-tutorials/blob/main/YoutubeOpenGL%2027%20-%20Normal%20Maps/default.geom
+
+    vec4 T = normalize(vec4(normal * vec4(tangent, 0.0f)));
+    vec4 B = normalize(vec4(normal * vec4(bitangent, 0.0f)));
+    vec4 N = normalize(vec4(normal * vec4(crossEdge, 0.0f)));
+
+    mat4 TBN = mat4(T, B, N, vec4(0.0,0.0,0.0,0.1));
+    // TBN is an orthogonal matrix and so its inverse is equal to its transpose
+    TBN = transpose(TBN);
+
+    //----------------------------------------------------------------------------
+
+
     // Obtemos a posição da câmera utilizando a inversa da matriz que define o
     // sistema de coordenadas da câmera.
     vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
@@ -98,11 +106,128 @@ void main()
     vec4 p = position_world;
 
     // Ponto onde está localizada a fonte de luz
-    vec4 l_light_point = vec4(0.0,1.0,0.0,1.0);
+    vec4 l_light_point = vec4(-14.0,1.0,15.5,1.0);
 
     // Normal do fragmento atual, interpolada pelo rasterizador a partir das
     // normais de cada vértice.
     vec4 n = normalize(normal);
+
+    // Parâmetros que definem as propriedades espectrais da superfície
+    vec3 Kd = vec3(0.698039,0.698039,0.698039); // Refletância difusa
+    vec3 Ks = vec3(0.0,0.0,0.0); // Refletância especular
+    vec3 Ka = vec3(0.0, 0.0, 0.0); // Refletância ambiente
+    float q = 9.84916; // Expoente especular para o modelo de iluminação de Phong
+
+    // Coordenadas de textura U e V, obtidas do arquivo OBJ.
+    float U = texcoords.x;
+    float V = texcoords.y;
+
+
+    if ( object_id == CAMPFIRE )
+    {
+        // Propriedades espectrais
+        Ks = vec3(0.222727,0.222727,0.222727);
+        Ka = vec3(0.5, 0.5, 0.5);
+        q = 1000;
+        /*n = vec4(normalize(texture(TextureNormalCampfire, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);*/
+    }
+    else if ( object_id == FIRE )
+    {
+        // Propriedades espectrais
+        Kd = vec3(0.0,0.0,0.0);
+        Ks = vec3(1.0,1.0,1.0);
+        Ka = vec3(0.5, 0.5, 0.5);
+        q = 1000;
+    }
+    else if ( object_id == CAVE_WALLS )
+    {
+        /*n = vec4(normalize(texture(TextureNormalCaveWalls, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);*/
+    }
+    else if ( object_id == CAVE_FLOOR )
+    {
+        /*n = vec4(normalize(texture(TextureNormalCaveFloor, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);*/
+    }
+    else if ( object_id == GRUTA_BASE )
+    {
+        // Propriedades espectrais
+        Kd = vec3(0.8,0.8,0.8);
+        Ka = vec3(1.0, 1.0, 1.0);
+        q = 0.0;
+        /*n = vec4(normalize(texture(TextureNormalGruta, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);*/
+    }
+    else if ( object_id == PRISIONER )
+    {
+        // Propriedades espectrais
+        Ks = vec3(0.5,0.5,0.5);
+        Ka = vec3(1.0, 1.0, 1.0);
+        q = 0.0;
+        /*n = vec4(normalize(texture(TextureNormalPrisioner, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);*/
+    }
+    else if ( object_id == PRISIONER_EYES || object_id == PRISIONER_TEETH )
+    {
+        // Propriedades espectrais
+        Ks = vec3(0.5,0.5,0.5);
+        Ka = vec3(1.0, 1.0, 1.0);
+        q = 0.0;
+    }
+    else if ( object_id == PRISIONER_ROCK )
+    {
+        // Propriedades espectrais
+        Ks = vec3(0.5,0.5,0.5);
+        Ka = vec3(1.0, 1.0, 1.0);
+        q = 0.0;
+        /*n = vec4(normalize(texture(TextureNormalPrisionerRock, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);*/
+    }
+    else if ( object_id == PRISIONER_CHAIN )
+    {
+        // Propriedades espectrais
+        Ks = vec3(0.5,0.5,0.5);
+        Ka = vec3(1.0, 1.0, 1.0);
+        q = 0.0;
+        /*n = vec4(normalize(texture(TextureNormalPrisionerChain, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);*/
+    }
+    else if ( object_id == LADDER )
+    {
+        // Propriedades espectrais
+        Kd = vec3(0.8,0.8,0.8);
+        Ks = vec3(0.5,0.5,0.5);
+        Ka = vec3(1.0, 1.0, 1.0);
+        q = 250.0;
+        /*n = vec4(normalize(texture(TextureNormalPrisionerChain, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);*/
+    }
+    else if ( object_id == GREEK2 )
+    {
+        // Propriedades espectrais
+        Ka = vec3(1.0, 1.0, 1.0);
+        /*n = vec4(normalize(texture(TextureNormalGreek2, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);*/
+    }
 
     // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
     vec4 l = normalize(l_light_point - p);
@@ -117,28 +242,8 @@ void main()
                    ((-1)*l.w) + (2 * n.w * dot(n,l))
                   );
 
-    // Parâmetros que definem as propriedades espectrais da superfície
-    vec3 Kd = vec3(1.0, 1.0, 1.0); // Refletância difusa
-    vec3 Ks = vec3(1.0, 1.0, 1.0); // Refletância especular
-    vec3 Ka = vec3(1.0, 1.0, 1.0); // Refletância ambiente
-    float q = 100; // Expoente especular para o modelo de iluminação de Phong
-
-    // Coordenadas de textura U e V
-    float U = 0.0;
-    float V = 0.0;
-
-    if ( object_id == PLAYER )
-    {
-    }
-    else
-    {
-        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
-        U = texcoords.x;
-        V = texcoords.y;
-    }
-
     // Espectro da fonte de iluminação
-    vec3 I = vec3(1.0, 1.0, 1.0); // PREENCH AQUI o espectro da fonte de luz
+    vec3 I = vec3(1.0, 0.5, 0.5); // PREENCH AQUI o espectro da fonte de luz
 
     // Espectro da luz ambiente
     vec3 Ia = vec3(0.2, 0.2, 0.2); // PREENCHA AQUI o espectro da luz ambiente
@@ -149,62 +254,96 @@ void main()
     // Termo ambiente
     vec3 ambient_term = Ka*Ia; // PREENCHA AQUI o termo ambiente
 
-    // Termo especular utilizando o modelo de iluminação de Phong
-    vec3 phong_specular_term  = Ks * I * pow( max( 0, dot(r,v) ), q ) * max( 0, dot(n,l) ); // PREENCH AQUI o termo especular de Phong
+    // “half-vector”: Meio do caminho entre v e l
+    vec4 vmaisl = v+l;
+    vec4 h = vmaisl / sqrt( vmaisl.x*vmaisl.x + vmaisl.y*vmaisl.y + vmaisl.z*vmaisl.z );
+
+    // q'
+    float q_linha = 1000 - q;
+
+    // Termo especular utilizando o modelo de iluminação de Blinn-Phong
+    vec3 blinn_phong_specular_term  = Ks * I * pow( max( 0, dot(n,h) ), q_linha ); // PREENCH AQUI o termo especular de Phong
 
 
     // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
-    vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
-    vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
-    vec3 Kd2 = texture(TextureImage2, vec2(U,V)).rgb;
-    vec3 Kd3 = texture(TextureImage3, vec2(U,V)).rgb;
-    vec3 Kd4 = texture(TextureImage4, vec2(U,V)).rgb;
-    vec3 Kd5 = texture(TextureImage5, vec2(U,V)).rgb;
-    vec3 Kd6 = texture(TextureImage6, vec2(U,V)).rgb;
-    vec3 Kd7 = texture(TextureImage7, vec2(U,V)).rgb;
+    vec3 KdCampfire = texture(TextureImageCampfire, vec2(U,V)).rgb;
+    vec3 KdFire = texture(TextureImageFire, vec2(U,V)).rgb;
+    vec3 KdCaveWalls = texture(TextureImageCaveWalls, vec2(U,V)).rgb;
+    vec3 KdCaveFloor = texture(TextureImageCaveFloor, vec2(U,V)).rgb;
+    vec3 KdGruta = texture(TextureImageGruta, vec2(U,V)).rgb;
+    vec3 KdGreekBody = texture(TextureImageGreekBody, vec2(U,V)).rgb;
+    vec3 KdGreekHead = texture(TextureImageGreekHead, vec2(U,V)).rgb;
+    vec3 KdTitle = texture(TextureImageTitle, vec2(U,V)).rgb;
+    vec3 KdPrisioner = texture(TextureImagePrisioner, vec2(U,V)).rgb;
+    vec3 KdPrisionerEyes = texture(TextureImagePrisionerEyes, vec2(U,V)).rgb;
+    vec3 KdPrisionerTeeth = texture(TextureImagePrisionerTeeth, vec2(U,V)).rgb;
+    vec3 KdPrisionerRock = texture(TextureImagePrisionerRock, vec2(U,V)).rgb;
+    vec3 KdPrisionerChain = texture(TextureImagePrisionerChain, vec2(U,V)).rgb;
+    vec3 KdLadder = texture(TextureImageLadder, vec2(U,V)).rgb;
+    vec3 KdGreek2 = texture(TextureImageGreek2, vec2(U,V)).rgb;
 
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
 
-    if ( object_id == PLAYER )
+    if ( object_id == CAMPFIRE )
     {
-        color.rgb = Kd0 * (lambert + 0.01);
+        color.rgb = KdCampfire * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
-    else if ( object_id == CAMPFIRE )
+    else if ( object_id == FIRE )
     {
-        color.rgb = Kd0 * (lambert + 0.01);
+        color.rgb = KdFire * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
-    else if ( object_id == FIRE1 || object_id == FIRE2 || object_id == FIRE3 || object_id == FIRE4 || object_id == FIRE5 || object_id == FIRE6
-              || object_id == FIRE7 || object_id == FIRE8 || object_id == FIRE9 || object_id == FIRE10 || object_id == FIRE11 || object_id == FIRE12
-               || object_id == FIRE13 || object_id == FIRE14 || object_id == FIRE15 || object_id == FIRE16 || object_id == FIRE17 || object_id == FIRE18
-                || object_id == FIRE19 || object_id == FIRE20 || object_id == FIRE21 || object_id == FIRE22 || object_id == FIRE23 || object_id == FIRE24
-                 || object_id == FIRE25 || object_id == FIRE26 || object_id == FIRE27 || object_id == FIRE28 || object_id == FIRE29 )
+    else if ( object_id == CAVE || object_id == CAVE_WALLS )
     {
-        color.rgb = Kd6 * (lambert + 0.01);
+        color.rgb = KdCaveWalls * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
-    else if ( object_id == CAVE1 || object_id == CAVE2 || object_id == CAVE_WALLS1 || object_id == CAVE_WALLS2 )
+    else if ( object_id == CAVE_FLOOR )
     {
-        color.rgb = Kd1 * (lambert + 0.01);
+        color.rgb = KdCaveFloor * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
-    else if ( object_id == CAVE_STONES )
+    else if ( object_id == GRUTA_BASE )
     {
-        color.rgb = Kd2 * (lambert + 0.01);
+        color.rgb = KdGruta * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
-    else if ( object_id == CAVE_FLOOR1 || object_id == CAVE_FLOOR2 )
+    else if ( object_id == GREEK_BODY )
     {
-        color.rgb = Kd3 * (lambert + 0.01);
+        color.rgb = KdGreekBody * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
-    else if ( object_id == CAVE_TOP )
+    else if ( object_id == GREEK_HEAD )
     {
-        color.rgb = Kd7 * (lambert + 0.01);
+        color.rgb = KdGreekHead * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
-    else if ( object_id == GREEK1)
+    else if ( object_id == TITLE )
     {
-        color.rgb = Kd5 * (lambert + 0.01);
+        color.rgb = KdTitle * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
-    else if ( object_id == GREEK2)
+    else if ( object_id == PRISIONER )
     {
-        color.rgb = Kd4 * (lambert + 0.01);
+        color.rgb = KdPrisioner * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == PRISIONER_EYES )
+    {
+        color.rgb = KdPrisionerEyes * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == PRISIONER_TEETH )
+    {
+        color.rgb = KdPrisionerTeeth * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == PRISIONER_ROCK )
+    {
+        color.rgb = KdPrisionerRock * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == PRISIONER_CHAIN )
+    {
+        color.rgb = KdPrisionerChain * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == LADDER )
+    {
+        color.rgb = KdLadder * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == GREEK2 )
+    {
+        color.rgb = KdGreek2 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
 
 

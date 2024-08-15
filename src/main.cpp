@@ -53,47 +53,22 @@
 #define M_PI_2 1.57079632679489661923
 
 // Identificador que define qual objeto está sendo desenhado no momento
-#define PLAYER 0
-#define CAMPFIRE  1
-#define FIRE1 2
-#define FIRE2 3
-#define FIRE3 4
-#define FIRE4 5
-#define FIRE5 6
-#define FIRE6 7
-#define FIRE7 8
-#define FIRE8 9
-#define FIRE9 10
-#define FIRE10 11
-#define FIRE11 12
-#define FIRE12 13
-#define FIRE13 14
-#define FIRE14 15
-#define FIRE15 16
-#define FIRE16 17
-#define FIRE17 18
-#define FIRE18 19
-#define FIRE19 20
-#define FIRE20 21
-#define FIRE21 22
-#define FIRE22 23
-#define FIRE23 24
-#define FIRE24 25
-#define FIRE25 26
-#define FIRE26 27
-#define FIRE27 28
-#define FIRE28 29
-#define FIRE29 30
-#define CAVE1  31
-#define CAVE2  32
-#define CAVE_WALLS1  33
-#define CAVE_WALLS2  34
-#define CAVE_STONES  35
-#define CAVE_FLOOR1  36
-#define CAVE_FLOOR2  37
-#define CAVE_TOP  38
-#define GREEK1  39
-#define GREEK2  40
+#define CAMPFIRE  0
+#define FIRE 1
+#define CAVE 2
+#define CAVE_WALLS 3
+#define CAVE_FLOOR 4
+#define GRUTA_BASE 5
+#define GREEK_BODY 6
+#define GREEK_HEAD 7
+#define TITLE 8
+#define PRISIONER 9
+#define PRISIONER_EYES 10
+#define PRISIONER_TEETH 11
+#define PRISIONER_ROCK 12
+#define PRISIONER_CHAIN 13
+#define LADDER 14
+#define GREEK2 15
 
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
@@ -161,8 +136,14 @@ void PopMatrix(glm::mat4& M);
 
 
 // Declarações de funções adicionadas para o trabalho Final
-void AdicionaJogador();
-void MovimentaPersonagem();
+void AddPlayer(glm::mat4 model);
+void MovePlayer();
+void AddCave();
+void AddLadder(glm::mat4 model);
+void AddTitle(glm::mat4 model);
+void AddPrisioner(glm::mat4 model, bool showBody);
+void AddCampfire(glm::mat4 model);
+void AddGreek2(glm::mat4 model);
 
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
@@ -173,7 +154,7 @@ GLuint BuildTriangles(); // Constrói triângulos para renderização
 void BuildTrianglesAndAddToVirtualScene(ObjModel*); // Constrói representação de um ObjModel como malha de triângulos para renderização
 void ComputeNormals(ObjModel* model); // Computa normais de um ObjModel, caso não existam.
 void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
-void LoadTextureImage(const char* filename); // Função que carrega imagens de textura
+void LoadTextureImage(const char* filename, const char* type); // Função que carrega imagens de textura
 void DrawVirtualObject(const char* object_name); // Desenha um objeto armazenado em g_VirtualScene
 GLuint LoadShader_Vertex(const char* filename);   // Carrega um vertex shader
 GLuint LoadShader_Fragment(const char* filename); // Carrega um fragment shader
@@ -260,7 +241,7 @@ bool g_PERIODKeyPressed = false;
 // usuário através do mouse (veja função CursorPosCallback()). A posição
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
-float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
+float g_CameraTheta = M_PI_2; // Ângulo no plano ZX em relação ao eixo Z
 float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 6.0f; // Distância da câmera para a origem
 
@@ -269,15 +250,19 @@ float g_ForearmAngleZ = 0.0f;
 float g_ForearmAngleX = 0.0f;
 
 // Variáveis que controlam translação do torso
-float g_TorsoPositionX = 0.0f;
+float g_TorsoPositionX = 5.0f;
 float g_TorsoPositionY = 0.0f;
-float g_TorsoPositionZ = 0.0f;
+float g_TorsoPositionZ = 25.0f;
 
 float current_time;
 float delta_t;
-float speed = 3.5f;
+float fast_speed = 8.0f;
+float normal_speed = 5.0f;
+float speed = normal_speed;
 float prev_time;
 
+//Variável que indica se o jogo está na tela inicial ou não
+bool g_InitialScreen = true;
 
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = true;
@@ -321,7 +306,7 @@ int main(int argc, char* argv[])
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     #endif
 
-    glfwWindowHint(GLFW_SAMPLES,4); //Multisample anti-aliasing
+    glfwWindowHint(GLFW_SAMPLES,16); //Multisample anti-aliasing
     //glfwWindowHint(GLFW_DECORATED, NULL); //Remove as bordas da janela
     // Pedimos para utilizar o perfil "core", isto é, utilizaremos somente as
     // funções modernas de OpenGL.
@@ -384,32 +369,64 @@ int main(int argc, char* argv[])
     LoadShadersFromFiles();
 
     // Carregamos duas imagens para serem utilizadas como textura
-    LoadTextureImage("../../data/Campfire_MAT_BaseColor_01.jpg"); // TextureImage0
-    LoadTextureImage("../../data/RGB_e34762cfafeb488aa5ba2f697743a0bc_Rock_Kit_C.png"); // TextureImage1
-    LoadTextureImage("../../data/RGB_cca3c218b0804ccbb342b292cff1defb_Rock_Kit_01_C.png"); // TextureImage2
-    LoadTextureImage("../../data/cave-floor-rock_albedo.png"); // TextureImage3
-    LoadTextureImage("../../data/RGB_6c497cd7818a44f79491a2e4a0e8c8af_07_aristotle_head.tga.png"); // TextureImage4
-    LoadTextureImage("../../data/RGB_a667b4b148b141cbbe618925eb411f31_07_aristotle_body.tga.png"); // TextureImage5
-    LoadTextureImage("../../data/Campfire_fire_MAT_BaseColor_Alpha.png"); // TextureImage6
-    LoadTextureImage("../../data/RGB_e9023efb00694b1e85361bb1f84f81dd_11922_NewCave_lambert1_AlbedoTransparency-JBMiO79k7-transformed.jpeg"); // TextureImage7
+    LoadTextureImage("../../data/campfire/Campfire_MAT_BaseColor_01.jpg",""); // TextureImageCampfire
+    LoadTextureImage("../../data/campfire/Campfire_MAT_Normal_JL.jpg","normal"); // TextureNormalCampfire
+    LoadTextureImage("../../data/campfire/Campfire_fire_MAT_BaseColor_Alpha.png","alpha"); // TextureImageFire
+    LoadTextureImage("../../data/cave/RGB_e34762cfafeb488aa5ba2f697743a0bc_Rock_Kit_C.png",""); // TextureImageCaveWalls
+    LoadTextureImage("../../data/cave/N_2feb3dc37ac84e3896cb70aa38f58448_Rock_Kit_N.jpeg","normal"); // TextureNormalCaveWalls
+    LoadTextureImage("../../data/cave/cave-floor-rock_albedo.png",""); // TextureImageCaveFloor
+    LoadTextureImage("../../data/cave/cave-floor-rock_normal-dx.png","normal"); // TextureNormalCaveFloor
+    LoadTextureImage("../../data/gruta/GRUTA_BASE_defaultMat_BaseColor.png",""); // TextureImageGruta
+    LoadTextureImage("../../data/gruta/GRUTA_BASE_defaultMat_Normal.png","normal"); // TextureNormalGruta
+    LoadTextureImage("../../data/greek/RGB_a667b4b148b141cbbe618925eb411f31_07_aristotle_body.tga.png",""); // TextureImageGreekBody
+    LoadTextureImage("../../data/greek/RGB_6c497cd7818a44f79491a2e4a0e8c8af_07_aristotle_head.tga.png",""); // TextureImageGreekHead
+    LoadTextureImage("../../data/title/yellow-wall-texture-with-scratches.jpg",""); // TextureImageTitle
+    LoadTextureImage("../../data/prisioner/667a8017571041f5bb6c01ebdb1137b7_RGB_Promitheus_diffuse.jpeg",""); // TextureImagePrisioner
+    LoadTextureImage("../../data/prisioner/d1d6ed95f36644b0820ac52998920b54_N_Promitheus_normals.jpeg","normal"); // TextureNormalPrisioner
+    LoadTextureImage("../../data/prisioner/63f774b953eb4321a0fd1f09e8419fc0_RGB_EYES_blues.jpeg",""); // TextureImagePrisionerEyes
+    LoadTextureImage("../../data/prisioner/cbce8eba87434b97a168fe8aadeb0bd1_RGB_Teeth.tga.png",""); // TextureImagePrisionerTeeth
+    LoadTextureImage("../../data/prisioner/eebbf88e369c458f9a44690ec444a16e_RGB_Aset_rock_sandstone_M_pjbqZ_2K_Albedo.jpeg",""); // TextureImagePrisionerRock
+    LoadTextureImage("../../data/prisioner/57b68e27ffa34a5c851cc472d74bb786_N_Aset_rock_sandstone_M_pjbqZ_2K_Normal_LOD0.jpeg","normal"); // TextureNormalPrisionerRock
+    LoadTextureImage("../../data/prisioner/f2153fd7eeac4b6eb7d4a5a1a865ba7a_RGB_Chain_diffuse.tga.png",""); // TextureImagePrisionerChain
+    LoadTextureImage("../../data/prisioner/fc35d313bd2442269ccba5bfa412d323_N_Chain_normal.tga.png","normal"); // TextureNormalPrisionerChain
+    LoadTextureImage("../../data/ladder/ladder_material_baseColor.png",""); // TextureImageLadder
+    LoadTextureImage("../../data/ladder/ladder_material_normal.png","normal"); // TextureNormalLadder
+    LoadTextureImage("../../data/greek2/RGB_379bb9ffa60c48d994f2b3773c413794_Pericles_albedo.jpeg",""); // TextureImageGreek2
+    LoadTextureImage("../../data/greek2/N_0eed01a070d14ef2ab5f584e06ce6ab1_Pericles_normal.jpeg","normal"); // TextureNormalGreek2
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    ObjModel cavemodel("../../data/cave.obj");
+    ObjModel cavemodel("../../data/cave/cave.obj");
     ComputeNormals(&cavemodel);
     BuildTrianglesAndAddToVirtualScene(&cavemodel);
 
-    ObjModel campfiremodel("../../data/Campfire.obj");
+    ObjModel campfiremodel("../../data/campfire/Campfire.obj");
     ComputeNormals(&campfiremodel);
     BuildTrianglesAndAddToVirtualScene(&campfiremodel);
 
-    ObjModel cavetopmodel("../../data/cavetop.obj");
-    ComputeNormals(&cavetopmodel);
-    BuildTrianglesAndAddToVirtualScene(&cavetopmodel);
-
-    ObjModel greekmodel("../../data/greek.obj");
+    ObjModel greekmodel("../../data/greek/greek.obj");
     ComputeNormals(&greekmodel);
     BuildTrianglesAndAddToVirtualScene(&greekmodel);
+
+    ObjModel prisionermodel("../../data/prisioner/prisioner.obj");
+    ComputeNormals(&prisionermodel);
+    BuildTrianglesAndAddToVirtualScene(&prisionermodel);
+
+    ObjModel grutamodel("../../data/gruta/gruta.obj");
+    ComputeNormals(&grutamodel);
+    BuildTrianglesAndAddToVirtualScene(&grutamodel);
+
+    ObjModel laddermodel("../../data/ladder/ladder.obj");
+    ComputeNormals(&laddermodel);
+    BuildTrianglesAndAddToVirtualScene(&laddermodel);
+
+    ObjModel titlemodel("../../data/title/title.obj");
+    ComputeNormals(&titlemodel);
+    BuildTrianglesAndAddToVirtualScene(&titlemodel);
+
+    ObjModel greek2model("../../data/greek2/greek2.obj");
+    ComputeNormals(&greek2model);
+    BuildTrianglesAndAddToVirtualScene(&greek2model);
 
     if ( argc > 1 )
     {
@@ -444,7 +461,7 @@ int main(int argc, char* argv[])
         // Conversaremos sobre sistemas de cores nas aulas de Modelos de Iluminação.
         //
         //           R     G     B     A
-        glClearColor(0.037f,0.197f,0.223f,0.0f);
+        glClearColor(0.0f,0.0f,0.0f,0.0f);
 
         // "Pintamos" todos os pixels do framebuffer com a cor definida acima,
         // e também resetamos todos os pixels do Z-buffer (depth buffer).
@@ -470,8 +487,20 @@ int main(int argc, char* argv[])
 
         // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
         // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        camera_position_c  = glm::vec4(x + g_TorsoPositionX, y + (g_TorsoPositionY + 5.0f), z + g_TorsoPositionZ, 1.0f); // Ponto "c", centro da câmera
-        camera_lookat_l    = glm::vec4(g_TorsoPositionX, g_TorsoPositionY + 2.7f, g_TorsoPositionZ, 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+        if(g_InitialScreen)
+        {
+            camera_position_c  = glm::vec4(-14.0f + 9.0f*cos(g_CameraPhi)*sin(g_CameraTheta),
+                                           1.0f + r*sin(g_CameraPhi),
+                                           15.5f + r*cos(g_CameraPhi)*cos(g_CameraTheta),
+                                           1.0f);
+            camera_lookat_l    = glm::vec4(-14.0f,1.0f+2.7f,15.5f,1.0f);
+
+        }
+        else{
+            camera_position_c  = glm::vec4(x + g_TorsoPositionX, y + (g_TorsoPositionY + 4.0f), z + g_TorsoPositionZ, 1.0f); // Ponto "c", centro da câmera
+            camera_lookat_l    = glm::vec4(g_TorsoPositionX, g_TorsoPositionY + 2.7f, g_TorsoPositionZ, 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+        }
+
         camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
         camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 
@@ -499,249 +528,53 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        #define PLAYER 0
-        #define CAMPFIRE  1
-        #define FIRE1 2
-        #define FIRE2 3
-        #define FIRE3 4
-        #define FIRE4 5
-        #define FIRE5 6
-        #define FIRE6 7
-        #define FIRE7 8
-        #define FIRE8 9
-        #define FIRE9 10
-        #define FIRE10 11
-        #define FIRE11 12
-        #define FIRE12 13
-        #define FIRE13 14
-        #define FIRE14 15
-        #define FIRE15 16
-        #define FIRE16 17
-        #define FIRE17 18
-        #define FIRE18 19
-        #define FIRE19 20
-        #define FIRE20 21
-        #define FIRE21 22
-        #define FIRE22 23
-        #define FIRE23 24
-        #define FIRE24 25
-        #define FIRE25 26
-        #define FIRE26 27
-        #define FIRE27 28
-        #define FIRE28 29
-        #define FIRE29 30
-        #define CAVE1  31
-        #define CAVE2  32
-        #define CAVE_WALLS1  33
-        #define CAVE_WALLS2  34
-        #define CAVE_STONES  35
-        #define CAVE_FLOOR1  36
-        #define CAVE_FLOOR2  37
-        #define CAVE_TOP  38
-
-        glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
-
 
         //----------------------------- JOGADOR ------------------------------------------
 
+        AddPlayer(Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ)
+                  * Matrix_Rotate_Y(camera_view_vector.z <= 0 ? M_PI/2 + g_AngleY_torso : M_PI/2 - g_AngleY_torso)
+                  * Matrix_Rotate_X(-M_PI_2)
+                  * Matrix_Rotate_Z(-M_PI_2)
+                  * Matrix_Scale(0.02f,0.02f,0.02f));
 
-        AdicionaJogador();
-
-        MovimentaPersonagem();
-
+        MovePlayer();
 
         //----------------------------- CAVERNA ------------------------------------------
 
+        AddCave(); //model definida dentro da função
 
-        // Desenhamos o plano da caverna
-        model = Matrix_Rotate_X(-M_PI_2)
-                * Matrix_Scale(2.0f,2.0f,2.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, CAVE1);
-        DrawVirtualObject("object_0");
+        //----------------------------- ESCADA ------------------------------------------
 
-        model = Matrix_Rotate_X(-M_PI_2)
-                * Matrix_Rotate_Z(M_PI)
-                * Matrix_Translate(0.0f,22.0f,0.0f)
-                * Matrix_Scale(2.0f,2.0f,2.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, CAVE2);
-        DrawVirtualObject("object_0");
+        AddLadder(Matrix_Rotate_Y(-M_PI/8)
+            * Matrix_Translate(-11.0f,0.4f,-0.9f)
+            * Matrix_Scale(0.02f,0.02f,0.02f));
 
-        // Desenhamos paredes da caverna
-        model = Matrix_Rotate_X(-M_PI_2)
-                * Matrix_Scale(2.0f,2.0f,2.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, CAVE_WALLS1);
-        DrawVirtualObject("object_1");
+        //----------------------------- TÍTULO ------------------------------------------
 
-        model = Matrix_Rotate_X(-M_PI_2)
-                * Matrix_Rotate_Z(M_PI)
-                * Matrix_Translate(0.0f,22.0f,0.0f)
-                * Matrix_Scale(2.0f,2.0f,2.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, CAVE_WALLS2);
-        DrawVirtualObject("object_1");
+        //Mostra o título apenas se o jogo estiver na tela inicial
+        if(g_InitialScreen)
+        {
+            AddTitle(Matrix_Rotate_Y(M_PI/2)
+                * Matrix_Translate(-15.5f,4.5f,-15.0f)
+                * Matrix_Scale(0.02f,0.02f,0.02f)
+                * Matrix_Rotate_X(M_PI/16));
+        }
 
-        // Desenhamos pedras do meio da caverna
-        model = Matrix_Rotate_X(-M_PI_2)
-                * Matrix_Scale(2.0f,2.0f,2.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, CAVE_STONES);
-        DrawVirtualObject("object_2");
+        //----------------------------- PRISIONEIRO ------------------------------------------
 
-        // Desenhamos o chão da caverna
-        model = Matrix_Rotate_X(-M_PI_2)
-            * Matrix_Translate(0.0f,0.0f,-0.4f)
-            * Matrix_Scale(2.0f,2.0f,2.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, CAVE_FLOOR1);
-        DrawVirtualObject("object_3");
+        AddPrisioner(Matrix_Translate(5.0f,3.0f,20.0f)
+            * Matrix_Scale(0.017f,0.017f,0.017f),true);
 
-        model = Matrix_Rotate_X(-M_PI_2)
-                * Matrix_Rotate_Z(M_PI)
-                * Matrix_Translate(0.0f,27.999f,-0.4f)
-                * Matrix_Scale(2.0f,2.0f,2.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, CAVE_FLOOR2);
-        DrawVirtualObject("object_3");
-
-        // Desenhamos o teto da caverna
-        model = Matrix_Translate(-75.0f,-10.0f,0.0f)
-                * Matrix_Scale(80.0f,80.0f,80.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, CAVE_TOP);
-        DrawVirtualObject("cavetop_1");
-
+        AddPrisioner(Matrix_Translate(10.0f,3.0f,20.0f)
+            * Matrix_Scale(0.017f,0.017f,0.017f),false);
 
         //----------------------------- FOGUEIRA ------------------------------------------
 
-        // Desenhamos a fogueira
-        model = Matrix_Translate(0.0f,0.0f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, CAMPFIRE);
-        DrawVirtualObject("Campfire");
+        AddCampfire(Matrix_Translate(-14.0f,0.0f,15.5f));
 
-        // Permite o desenho de objetos transparentes
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //----------------------------- SEGUNDO GREGO ------------------------------------------
 
-        // Desenhamos 28 partes do fogo
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE1);
-        DrawVirtualObject("fire_part_00");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE2);
-        DrawVirtualObject("fire_part_01");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE3);
-        DrawVirtualObject("fire_part_02");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE4);
-        DrawVirtualObject("fire_part_03");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE5);
-        DrawVirtualObject("fire_part_04");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE6);
-        DrawVirtualObject("fire_part_05");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE7);
-        DrawVirtualObject("fire_part_06");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE8);
-        DrawVirtualObject("fire_part_07");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE9);
-        DrawVirtualObject("fire_part_08");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE10);
-        DrawVirtualObject("fire_part_09");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE11);
-        DrawVirtualObject("fire_part_10");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE12);
-        DrawVirtualObject("fire_part_11");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE13);
-        DrawVirtualObject("fire_part_12");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE14);
-        DrawVirtualObject("fire_part_13");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE15);
-        DrawVirtualObject("fire_part_14");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE16);
-        DrawVirtualObject("fire_part_15");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE17);
-        DrawVirtualObject("fire_part_16");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE18);
-        DrawVirtualObject("fire_part_17");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE19);
-        DrawVirtualObject("fire_part_18");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE20);
-        DrawVirtualObject("fire_part_19");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE21);
-        DrawVirtualObject("fire_part_20");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE22);
-        DrawVirtualObject("fire_part_21");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE23);
-        DrawVirtualObject("fire_part_22");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE24);
-        DrawVirtualObject("fire_part_23");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE25);
-        DrawVirtualObject("fire_part_24");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE26);
-        DrawVirtualObject("fire_part_25");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE27);
-        DrawVirtualObject("fire_part_26");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE28);
-        DrawVirtualObject("fire_part_27");
-
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, FIRE29);
-        DrawVirtualObject("fire_part_28");
+        AddGreek2(Matrix_Scale(0.045f,0.045f,0.045f));
 
 
         // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
@@ -774,7 +607,7 @@ int main(int argc, char* argv[])
 }
 
 // Função que carrega uma imagem para ser utilizada como textura
-void LoadTextureImage(const char* filename)
+void LoadTextureImage(const char* filename, const char* type)
 {
     printf("Carregando imagem \"%s\"... ", filename);
 
@@ -816,7 +649,13 @@ void LoadTextureImage(const char* filename)
     GLuint textureunit = g_NumLoadedTextures;
     glActiveTexture(GL_TEXTURE0 + textureunit);
     glBindTexture(GL_TEXTURE_2D, texture_id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    if(type == "normal")
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    }
+    else{
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    }
     glGenerateMipmap(GL_TEXTURE_2D);
     glBindSampler(textureunit, sampler_id);
 
@@ -903,14 +742,30 @@ void LoadShadersFromFiles()
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
     glUseProgram(g_GpuProgramID);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage0"), 0);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage1"), 1);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage3"), 3);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage4"), 4);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage6"), 6);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage7"), 7);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCampfire"), 0);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCampfire"), 1);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageFire"), 2);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveWalls"), 3);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveWalls"), 4);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveFloor"), 5);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveFloor"), 6);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageGruta"), 7);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalGruta"), 8);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageGreekBody"), 9);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageGreekHead"), 10);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageTitle"), 11);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImagePrisioner"), 12);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalPrisioner"), 13);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImagePrisionerEyes"), 14);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImagePrisionerTeeth"), 15);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImagePrisionerRock"), 16);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalPrisionerRock"), 17);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImagePrisionerChain"), 18);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalPrisionerChain"), 19);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageLadder"), 20);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalLadder"), 21);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageGreek2"), 22);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalGreek2"), 23);
     glUseProgram(0);
 }
 
@@ -1008,6 +863,9 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
     std::vector<float>  model_coefficients;
     std::vector<float>  normal_coefficients;
     std::vector<float>  texture_coefficients;
+    std::vector<glm::vec3> tangents;
+    std::vector<glm::vec3> bitangents;
+    std::vector<glm::vec3> crossEdges;
 
     for (size_t shape = 0; shape < model->shapes.size(); ++shape)
     {
@@ -1026,6 +884,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
 
             for (size_t vertex = 0; vertex < 3; ++vertex)
             {
+
                 tinyobj::index_t idx = model->shapes[shape].mesh.indices[3*triangle + vertex];
 
                 indices.push_back(first_index + 3*triangle + vertex);
@@ -1069,7 +928,61 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                     texture_coefficients.push_back( u );
                     texture_coefficients.push_back( v );
                 }
+
             }
+
+            //------------------------ Calculo usado para normal mapping -------------
+
+            tinyobj::index_t idx = model->shapes[shape].mesh.indices[3*triangle + 0];
+            glm::vec3 v0 = glm::vec3(model->attrib.vertices[3*idx.vertex_index + 0],
+                                     model->attrib.vertices[3*idx.vertex_index + 1],
+                                     model->attrib.vertices[3*idx.vertex_index + 2]);
+
+            glm::vec2 uv0 = glm::vec2(model->attrib.texcoords[2*idx.texcoord_index + 0],
+                                      model->attrib.texcoords[2*idx.texcoord_index + 1]);
+
+            idx = model->shapes[shape].mesh.indices[3*triangle + 1];
+            glm::vec3 v1 = glm::vec3(model->attrib.vertices[3*idx.vertex_index + 0],
+                                     model->attrib.vertices[3*idx.vertex_index + 1],
+                                     model->attrib.vertices[3*idx.vertex_index + 2]);
+
+            glm::vec2 uv1 = glm::vec2(model->attrib.texcoords[2*idx.texcoord_index + 0],
+                                      model->attrib.texcoords[2*idx.texcoord_index + 1]);
+
+            idx = model->shapes[shape].mesh.indices[3*triangle + 2];
+            glm::vec3 v2 = glm::vec3(model->attrib.vertices[3*idx.vertex_index + 0],
+                                     model->attrib.vertices[3*idx.vertex_index + 1],
+                                     model->attrib.vertices[3*idx.vertex_index + 2]);
+
+            glm::vec2 uv2 = glm::vec2(model->attrib.texcoords[2*idx.texcoord_index + 0],
+                                      model->attrib.texcoords[2*idx.texcoord_index + 1]);
+
+            // Edges of the triangle : position delta
+            glm::vec3 deltaPos1 = v1-v0;
+            glm::vec3 deltaPos2 = v2-v0;
+            glm::vec3 crossDelta = cross(deltaPos1,deltaPos2);
+            crossEdges.push_back(crossDelta);
+            crossEdges.push_back(crossDelta);
+            crossEdges.push_back(crossDelta);
+
+            // UV delta
+            glm::vec2 deltaUV1 = uv1-uv0;
+            glm::vec2 deltaUV2 = uv2-uv0;
+
+            float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+            glm::vec3 tangent = (deltaPos1 * deltaUV2.y   - deltaPos2 * deltaUV1.y)*r;
+            glm::vec3 bitangent = (deltaPos2 * deltaUV1.x   - deltaPos1 * deltaUV2.x)*r;
+
+            // Set the same tangent for all three vertices of the triangle.
+            // They will be merged later, in vboindexer.cpp
+            tangents.push_back(tangent);
+            tangents.push_back(tangent);
+            tangents.push_back(tangent);
+
+            // Same thing for bitangents
+            bitangents.push_back(bitangent);
+            bitangents.push_back(bitangent);
+            bitangents.push_back(bitangent);
         }
 
         size_t last_index = indices.size() - 1;
@@ -1125,6 +1038,39 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
         glEnableVertexAttribArray(location);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
+
+        GLuint VBO_tangents_id;
+        glGenBuffers(1, &VBO_tangents_id);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_tangents_id);
+        glBufferData(GL_ARRAY_BUFFER, tangents.size() * sizeof(glm::vec3), NULL, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, tangents.size() * sizeof(glm::vec3), tangents.data());
+        location = 3; // "(location = 1)" em "shader_vertex.glsl"
+        number_of_dimensions = 3; // vec2 em "shader_vertex.glsl"
+        glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(location);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        GLuint VBO_bitangents_id;
+        glGenBuffers(1, &VBO_bitangents_id);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_bitangents_id);
+        glBufferData(GL_ARRAY_BUFFER, bitangents.size() * sizeof(glm::vec3), NULL, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, bitangents.size() * sizeof(glm::vec3), bitangents.data());
+        location = 4; // "(location = 1)" em "shader_vertex.glsl"
+        number_of_dimensions = 3; // vec2 em "shader_vertex.glsl"
+        glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(location);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        GLuint VBO_crossEdges_id;
+        glGenBuffers(1, &VBO_crossEdges_id);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_crossEdges_id);
+        glBufferData(GL_ARRAY_BUFFER, crossEdges.size() * sizeof(glm::vec3), NULL, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, crossEdges.size() * sizeof(glm::vec3), crossEdges.data());
+        location = 5; // "(location = 1)" em "shader_vertex.glsl"
+        number_of_dimensions = 3; // vec2 em "shader_vertex.glsl"
+        glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(location);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     GLuint indices_id;
     glGenBuffers(1, &indices_id);
@@ -1379,7 +1325,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
 
-    if (g_LeftMouseButtonPressed)
+    if (g_LeftMouseButtonPressed && !g_InitialScreen)
     {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         //float dx = xpos - g_LastCursorPosX;
@@ -1398,40 +1344,6 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 
         if (g_CameraPhi < phimin)
             g_CameraPhi = phimin;
-
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
-    }
-
-    // DESABILITADO PELO IF
-    if (g_RightMouseButtonPressed && 1 == 0)
-    {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_ForearmAngleZ -= 0.01f*dx;
-        g_ForearmAngleX += 0.01f*dy;
-
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
-    }
-
-    // DESABILITADO PELO IF
-    if (g_MiddleMouseButtonPressed && 1 == 0)
-    {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_TorsoPositionX += 0.01f*dx;
-        g_TorsoPositionY -= 0.01f*dy;
 
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
@@ -1472,59 +1384,82 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
-
-    // Se o usuário apertar a tecla W, movimentamos a câmera para frente.
-    if ( (key == GLFW_KEY_W || key == GLFW_KEY_UP) && action == GLFW_PRESS)
+    // Jogo começa quando sai da tela inicial
+    if(!g_InitialScreen)
     {
-        g_WKeyPressed = true;
-    }
-    else if( (key == GLFW_KEY_W || key == GLFW_KEY_UP) && action == GLFW_RELEASE){
-        g_WKeyPressed = false;
-    }
 
-    // Se o usuário apertar a tecla A, movimentamos a câmera para a esquerda.
-    if ( (key == GLFW_KEY_A || key == GLFW_KEY_LEFT) && action == GLFW_PRESS )
-    {
-        g_AKeyPressed = true;
-    }
-    else if( (key == GLFW_KEY_A || key == GLFW_KEY_LEFT) && action == GLFW_RELEASE){
-        g_AKeyPressed = false;
-    }
+        // Se o usuário apertar a tecla W, movimentamos a câmera para frente.
+        if ( (key == GLFW_KEY_W || key == GLFW_KEY_UP) && action == GLFW_PRESS)
+        {
+            g_WKeyPressed = true;
+        }
+        else if( (key == GLFW_KEY_W || key == GLFW_KEY_UP) && action == GLFW_RELEASE){
+            g_WKeyPressed = false;
+        }
 
-    // Se o usuário apertar a tecla S, movimentamos a câmera para trás.
-    if ( (key == GLFW_KEY_S || key == GLFW_KEY_DOWN) && action == GLFW_PRESS)
-    {
-        g_SKeyPressed = true;
-    }
-    else if( (key == GLFW_KEY_S || key == GLFW_KEY_DOWN) && action == GLFW_RELEASE){
-        g_SKeyPressed = false;
-    }
+        // Se o usuário apertar a tecla A, movimentamos a câmera para a esquerda.
+        if ( (key == GLFW_KEY_A || key == GLFW_KEY_LEFT) && action == GLFW_PRESS )
+        {
+            g_AKeyPressed = true;
+        }
+        else if( (key == GLFW_KEY_A || key == GLFW_KEY_LEFT) && action == GLFW_RELEASE){
+            g_AKeyPressed = false;
+        }
 
-    // Se o usuário apertar a tecla D, movimentamos a câmera para a direita.
-    if ( (key == GLFW_KEY_D || key == GLFW_KEY_RIGHT) && action == GLFW_PRESS)
-    {
-        g_DKeyPressed = true;
-    }
-    else if( (key == GLFW_KEY_D || key == GLFW_KEY_RIGHT) && action == GLFW_RELEASE){
-        g_DKeyPressed = false;
-    }
+        // Se o usuário apertar a tecla S, movimentamos a câmera para trás.
+        if ( (key == GLFW_KEY_S || key == GLFW_KEY_DOWN) && action == GLFW_PRESS)
+        {
+            g_SKeyPressed = true;
+        }
+        else if( (key == GLFW_KEY_S || key == GLFW_KEY_DOWN) && action == GLFW_RELEASE){
+            g_SKeyPressed = false;
+        }
 
-    // Se o usuário apertar a tecla ",", movimentamos a câmera para cima.
-    if (key == GLFW_KEY_COMMA && action == GLFW_PRESS)
-    {
-        g_COMMAKeyPressed = true;
-    }
-    else if(key == GLFW_KEY_COMMA && action == GLFW_RELEASE){
-        g_COMMAKeyPressed = false;
-    }
+        // Se o usuário apertar a tecla D, movimentamos a câmera para a direita.
+        if ( (key == GLFW_KEY_D || key == GLFW_KEY_RIGHT) && action == GLFW_PRESS)
+        {
+            g_DKeyPressed = true;
+        }
+        else if( (key == GLFW_KEY_D || key == GLFW_KEY_RIGHT) && action == GLFW_RELEASE){
+            g_DKeyPressed = false;
+        }
 
-    // Se o usuário apertar a tecla ".", movimentamos a câmera para baixo.
-    if (key == GLFW_KEY_PERIOD && action == GLFW_PRESS)
-    {
-        g_PERIODKeyPressed = true;
+        // Se o usuário apertar a tecla ",", movimentamos a câmera para cima.
+        if (key == GLFW_KEY_COMMA && action == GLFW_PRESS)
+        {
+            g_COMMAKeyPressed = true;
+        }
+        else if(key == GLFW_KEY_COMMA && action == GLFW_RELEASE){
+            g_COMMAKeyPressed = false;
+        }
+
+        // Se o usuário apertar a tecla ".", movimentamos a câmera para baixo.
+        if (key == GLFW_KEY_PERIOD && action == GLFW_PRESS)
+        {
+            g_PERIODKeyPressed = true;
+        }
+        else if(key == GLFW_KEY_PERIOD && action == GLFW_RELEASE){
+            g_PERIODKeyPressed = false;
+        }
+
+        // Se o usuário apertar o shift esquerdo o personagem anda mais rápido.
+        if (key == GLFW_KEY_LEFT_SHIFT  && action == GLFW_PRESS)
+        {
+            speed = fast_speed;
+        }
+        else if(key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE){
+            speed = normal_speed;
+        }
+
     }
-    else if(key == GLFW_KEY_PERIOD && action == GLFW_RELEASE){
-        g_PERIODKeyPressed = false;
+    else{
+        // Se o usuário apertar a tecla enter na tela inicial, começa o jogo.
+        if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
+        {
+            g_InitialScreen = false;
+            //g_CameraTheta = 0.0f;
+            //g_CameraPhi = 0.0f;
+        }
     }
 
 
@@ -2134,42 +2069,19 @@ GLuint BuildTriangles()
     return vertex_array_object_id;
 }
 
-void AdicionaJogador(){
-    // Buscamos o endereço das variáveis definidas dentro do Vertex Shader.
-    // Utilizaremos estas variáveis para enviar dados para a placa de vídeo
-    // (GPU)! Veja arquivo "shader_vertex.glsl".
-    GLint model_uniform           = glGetUniformLocation(g_GpuProgramID, "model"); // Variável da matriz "model"
-    GLint view_uniform            = glGetUniformLocation(g_GpuProgramID, "view"); // Variável da matriz "view" em shader_vertex.glsl
-    GLint projection_uniform      = glGetUniformLocation(g_GpuProgramID, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
-    GLint render_as_black_uniform = glGetUniformLocation(g_GpuProgramID, "render_as_black"); // Variável booleana em shader_vertex.glsl
-
-    GLuint vertex_array_object_id = BuildTriangles();
-
-    glm::mat4 model = Matrix_Identity();
-    //model = model * Matrix_Scale(0.5f, 0.5f, 0.5f);
-
-    glBindVertexArray(vertex_array_object_id);
-
-    // Translação inicial do torso
-    model = model * Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ)
-        * Matrix_Rotate_Y(camera_view_vector.z <= 0 ? M_PI/2 + g_AngleY_torso : M_PI/2 - g_AngleY_torso); // rotação Y de Euler
-    //model = model * Matrix_Scale(g_AngleX_leg, 1.0f, 1.0f);
+void AddPlayer(glm::mat4 model){
 
     // Desenhamos o jogador
-    model = model
-        * Matrix_Rotate_X(-M_PI_2)
-        * Matrix_Rotate_Z(-M_PI_2)
-        * Matrix_Scale(0.02f,0.02f,0.02f);
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-    glUniform1i(g_object_id_uniform, GREEK1);
+    glUniform1i(g_object_id_uniform, GREEK_BODY);
     DrawVirtualObject("greek_0");
 
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-    glUniform1i(g_object_id_uniform, GREEK2);
+    glUniform1i(g_object_id_uniform, GREEK_HEAD);
     DrawVirtualObject("greek_1");
 }
 
-void MovimentaPersonagem(){
+void MovePlayer(){
     float angle_45 = M_PI / 4;
 
 
@@ -2191,7 +2103,7 @@ void MovimentaPersonagem(){
     float angulo_X = dotproduct(plano_X, view_aux) / (norm(plano_X) * norm(view_aux));
     float angulo_Z = dotproduct(plano_Z, view_aux) / (norm(plano_Z) * norm(view_aux));
 
-    // Erro: função acos(x) retorna NaN (Not a Number) para -1 > x or x > 1
+    // Erro: função acos(x) retorna NaN (Not a Number) para -1 > x ou x > 1
     if(angulo_X < -1.0f)
     {
         angulo_X = acos(-1.0f);
@@ -2244,6 +2156,430 @@ void MovimentaPersonagem(){
     }
 }
 
+void AddCave(){
+
+    glm::mat4 model = Matrix_Identity();
+
+    // Desenhamos o plano da caverna
+    model = Matrix_Rotate_X(-M_PI_2)
+            * Matrix_Scale(2.0f,2.0f,2.0f);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, CAVE);
+    DrawVirtualObject("cave_map");
+
+    model = Matrix_Rotate_X(-M_PI_2)
+            * Matrix_Rotate_Z(M_PI)
+            * Matrix_Translate(0.0f,22.0f,0.0f)
+            * Matrix_Scale(2.0f,2.0f,2.0f);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, CAVE);
+    DrawVirtualObject("cave_map");
+
+    // Desenhamos paredes da caverna
+    model = Matrix_Rotate_X(-M_PI_2)
+            * Matrix_Scale(2.0f,2.0f,2.0f);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, CAVE_WALLS);
+    DrawVirtualObject("cave_wall");
+
+    model = Matrix_Rotate_X(-M_PI_2)
+            * Matrix_Rotate_Z(M_PI)
+            * Matrix_Translate(0.0f,22.0f,0.0f)
+            * Matrix_Scale(2.0f,2.0f,2.0f);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, CAVE_WALLS);
+    DrawVirtualObject("cave_wall");
+
+    // Desenhamos o chão da caverna
+    model = Matrix_Rotate_X(-M_PI_2)
+        * Matrix_Translate(0.0f,0.0f,-0.4f)
+        * Matrix_Scale(2.0f,2.0f,2.0f);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, CAVE_FLOOR);
+    DrawVirtualObject("cave_floor");
+
+    model = Matrix_Rotate_X(-M_PI_2)
+            * Matrix_Rotate_Z(M_PI)
+            * Matrix_Translate(0.0f,27.999f,-0.4f)
+            * Matrix_Scale(2.0f,2.0f,2.0f);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, CAVE_FLOOR);
+    DrawVirtualObject("cave_floor");
+
+    // Desenhamos o teto da caverna
+    model = Matrix_Scale(-17.0f,17.0f,17.0f);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, GRUTA_BASE);
+    DrawVirtualObject("GRUTA_BASE");
+
+    // Desenhamos o teto da caverna
+    model = Matrix_Scale(17.0f,17.0f,17.0f);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, GRUTA_BASE);
+    DrawVirtualObject("GRUTA_BASE");
+
+}
+
+void AddLadder(glm::mat4 model){
+
+    // Desenhamos a escada
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, LADDER);
+    DrawVirtualObject("ladder_ladder_material_0");
+
+}
+
+void AddTitle(glm::mat4 model){
+
+    // Desenhamos o título do jogo
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, TITLE);
+    DrawVirtualObject("title");
+
+}
+
+void AddPrisioner(glm::mat4 model, bool showBody){
+
+    if(showBody)
+    {
+         // Desenhamos o prisioneiro
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, PRISIONER);
+        DrawVirtualObject("Promitheus_Promitheus_0");
+
+        // Desenhamos o olho esquerdo do prisioneiro
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, PRISIONER_EYES);
+        DrawVirtualObject("eyeL_eyes_0");
+
+        // Desenhamos o olho direito do prisioneiro
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, PRISIONER_EYES);
+        DrawVirtualObject("eyeR_eyes_0");
+
+        // Desenhamos os dentes superiores do prisioneiro
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, PRISIONER_TEETH);
+        DrawVirtualObject("Teeth_up_teeth_0");
+
+        // Desenhamos os dentes inferiores do prisioneiro
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, PRISIONER_TEETH);
+        DrawVirtualObject("Teeth_down_teeth_0");
+    }
+
+    // Desenhamos a pedra onde o prisioneiro fica preso
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_ROCK);
+    DrawVirtualObject("Rock_Rock_0");
+
+    // Desenhamos as partes das correntes que prendem o prisioneiro
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_xeiropeda_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_xeiropeda001_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos001_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos002_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos003_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos004_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos005_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos006_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos007_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos008_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos009_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos010_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos011_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos012_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos013_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos014_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos015_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos016_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos017_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos018_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos019_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos020_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos021_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos022_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos023_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos024_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos025_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos026_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos027_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos028_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos029_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos030_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos031_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos032_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos033_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos034_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos035_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos036_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos037_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos038_Chain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, PRISIONER_CHAIN);
+    DrawVirtualObject("Chain_krikos039_Chain_0");
+}
+
+void AddCampfire(glm::mat4 model){
+
+    //Desenhamos a fogueira
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, CAMPFIRE);
+    DrawVirtualObject("Campfire");
+
+    // Permite o desenho de objetos transparentes
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Desenhamos 28 partes do fogo
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_00");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_01");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_02");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_03");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_04");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_05");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_06");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_07");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_08");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_09");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_10");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_11");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_12");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_13");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_14");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_15");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_16");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_17");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_18");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_19");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_20");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_21");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_22");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_23");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_24");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_25");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_26");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_27");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, FIRE);
+    DrawVirtualObject("fire_part_28");
+
+}
+
+void AddGreek2(glm::mat4 model){
+
+    // Desenhamos o segundo modelo de grego
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, GREEK2);
+    DrawVirtualObject("pericles");
+}
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
