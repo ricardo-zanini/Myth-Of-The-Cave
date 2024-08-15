@@ -1,0 +1,55 @@
+# Blender 4.2.0 MTL File: 'None'
+# www.blender.org
+
+newmtl Chain
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+map_Kd C:/f2153fd7eeac4b6eb7d4a5a1a865ba7a_RGB_Chain_diffuse.tga.png
+map_Bump -bm 2.000000 C:/fc35d313bd2442269ccba5bfa412d323_N_Chain_normal.tga.png
+
+newmtl Promitheus
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+map_Kd C:/667a8017571041f5bb6c01ebdb1137b7_RGB_Promitheus_diffuse.jpeg
+map_Bump -bm 2.000000 C:/d1d6ed95f36644b0820ac52998920b54_N_Promitheus_normals.jpeg
+
+newmtl Rock
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+map_Kd eebbf88e369c458f9a44690ec444a16e_RGB_Aset_rock_sandstone_M_pjbqZ_2K_Albedo.jpeg
+map_Bump -bm 2.000000 C:/57b68e27ffa34a5c851cc472d74bb786_N_Aset_rock_sandstone_M_pjbqZ_2K_Normal_LOD0.jpeg
+
+newmtl eyes
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+map_Kd C:/63f774b953eb4321a0fd1f09e8419fc0_RGB_EYES_blues.jpeg
+
+newmtl teeth
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+map_Kd C:/cbce8eba87434b97a168fe8aadeb0bd1_RGB_Teeth.tga.png
