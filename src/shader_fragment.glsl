@@ -42,8 +42,10 @@ uniform mat4 projection;
 #define GREEK2 15
 #define GRASS 16
 #define MOUNTAIN 17
-#define CAVE_ENTRANCE1 18
-#define CAVE_ENTRANCE2 19
+#define MOUNTAIN2K 18
+#define MOUNTAIN4K 19
+#define CAVE_ENTRANCE1 20
+#define CAVE_ENTRANCE2 21
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -52,33 +54,28 @@ uniform vec4 bbox_max;
 
 // Variáveis para acesso das imagens de textura
 uniform sampler2D TextureImageCampfire;
-uniform sampler2D TextureNormalCampfire;
 uniform sampler2D TextureImageFire;
 uniform sampler2D TextureImageCaveWalls;
-uniform sampler2D TextureNormalCaveWalls;
 uniform sampler2D TextureImageCaveFloor;
-uniform sampler2D TextureNormalCaveFloor;
 uniform sampler2D TextureImageGruta;
-uniform sampler2D TexturNormalGruta;
 uniform sampler2D TextureImageGreekBody;
 uniform sampler2D TextureImageGreekHead;
 uniform sampler2D TextureImageTitle;
 uniform sampler2D TextureImagePrisioner;
-uniform sampler2D TextureNormalPrisioner;
 uniform sampler2D TextureImagePrisionerEyes;
 uniform sampler2D TextureImagePrisionerTeeth;
 uniform sampler2D TextureImagePrisionerRock;
-uniform sampler2D TextureNormalPrisionerRock;
 uniform sampler2D TextureImagePrisionerChain;
-uniform sampler2D TextureNormalPrisionerChain;
 uniform sampler2D TextureImageLadder;
-uniform sampler2D TextureNormalLadder;
 uniform sampler2D TextureImageGreek2;
-uniform sampler2D TextureNormalGreek2;
 uniform sampler2D TextureImageGrass;
 uniform sampler2D TextureNormalGrass;
 uniform sampler2D TextureImageMountain;
 uniform sampler2D TextureNormalMountain;
+uniform sampler2D TextureImageMountain2K;
+uniform sampler2D TextureNormalMountain2K;
+uniform sampler2D TextureImageMountain4K;
+uniform sampler2D TextureNormalMountain4K;
 uniform sampler2D TextureImageCaveEntrance1;
 uniform sampler2D TextureNormalCaveEntrance1;
 uniform sampler2D TextureImageCaveEntrance2;
@@ -93,6 +90,7 @@ out vec4 color;
 
 void main()
 {
+
     //------------------------------- FONTE: https://github.com/VictorGordan/opengl-tutorials/blob/main/YoutubeOpenGL%2027%20-%20Normal%20Maps/default.geom
 
     vec4 T = normalize(vec4(normal * vec4(tangent, 0.0f)));
@@ -121,12 +119,23 @@ void main()
     // Ponto onde está localizada a fonte de luz
     vec4 l_light_point;
 
-    if(isOutCave != 0.0f)
+    // Espectro da fonte de iluminação
+    vec3 I;
+
+    // Espectro da luz ambiente
+    vec3 Ia;
+
+    //Define se é a luz da caverna ou não
+    if( ( (object_id == GREEK_HEAD || object_id == GREEK_BODY) && p.z < 200.0f ) || ( (object_id != GREEK_HEAD && object_id != GREEK_BODY) && object_id >= 0 && object_id <= 15 ) )
     {
-        l_light_point = vec4(0.0,100.0,400.0,1.0);
+        l_light_point = vec4(-14.0,1.0,15.5,1.0);
+        I = vec3(1.0, 0.5, 0.5);
+        Ia = vec3(0.2, 0.2, 0.2);
     }
     else{
-        l_light_point = vec4(-14.0,1.0,15.5,1.0);
+        l_light_point = vec4(0.0,100.0,400.0,1.0);
+        I = vec3(0.95686274509, 0.91372549019, 0.60784313725);
+        Ia = vec3(1.0, 1.0, 1.0);
     }
 
     // Normal do fragmento atual, interpolada pelo rasterizador a partir das
@@ -187,6 +196,11 @@ void main()
         p = vec4(TBN * normal);
         l_light_point = vec4(TBN * l_light_point);
         camera_position = vec4(TBN * camera_position);*/
+    }
+    else if ( object_id == GREEK_HEAD || object_id == GREEK_BODY )
+    {
+        // Propriedades espectrais
+        Ka = vec3(0.5, 0.5, 0.5);
     }
     else if ( object_id == PRISIONER )
     {
@@ -252,18 +266,36 @@ void main()
     else if ( object_id == GRASS )
     {
         // Propriedades espectrais
-        Kd = vec3(0.8,0.8,0.8);
+        /*Kd = vec3(0.8,0.8,0.8);
         Ka = vec3(1.0, 1.0, 1.0);
         n = vec4(normalize(texture(TextureNormalGrass, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
         p = vec4(TBN * normal);
         l_light_point = vec4(TBN * l_light_point);
-        camera_position = vec4(TBN * camera_position);
+        camera_position = vec4(TBN * camera_position);*/
     }
     else if ( object_id == MOUNTAIN )
     {
         // Propriedades espectrais
         Ka = vec3(1.0, 1.0, 1.0);
         n = vec4(normalize(texture(TextureNormalMountain, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);
+    }
+    else if ( object_id == MOUNTAIN2K )
+    {
+        // Propriedades espectrais
+        Ka = vec3(1.0, 1.0, 1.0);
+        n = vec4(normalize(texture(TextureNormalMountain2K, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);
+    }
+    else if ( object_id == MOUNTAIN4K )
+    {
+        // Propriedades espectrais
+        Ka = vec3(1.0, 1.0, 1.0);
+        n = vec4(normalize(texture(TextureNormalMountain4K, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
         p = vec4(TBN * normal);
         l_light_point = vec4(TBN * l_light_point);
         camera_position = vec4(TBN * camera_position);
@@ -316,22 +348,6 @@ void main()
                    ((-1)*l.w) + (2 * n.w * dot(n,l))
                   );
 
-    // Espectro da fonte de iluminação
-    vec3 I;
-
-    // Espectro da luz ambiente
-    vec3 Ia;
-
-    if(isOutCave != 0.0f)
-    {
-        I = vec3(1.0, 1.0, 1.0);
-        Ia = vec3(1.0, 1.0, 1.0);
-    }
-    else{
-        I = vec3(1.0, 0.5, 0.5); // PREENCH AQUI o espectro da fonte de luz
-        Ia = vec3(0.2, 0.2, 0.2);
-    }
-
     // Termo difuso utilizando a lei dos cossenos de Lambert
     vec3 lambert_diffuse_term = Kd * I * max( 0, dot(n,l) ); // PREENCHA AQUI o termo difuso de Lambert
 
@@ -367,6 +383,8 @@ void main()
     vec3 KdGreek2 = texture(TextureImageGreek2, vec2(U,V)).rgb;
     vec3 KdGrass = texture(TextureImageGrass, vec2(U,V)).rgb;
     vec3 KdMountain = texture(TextureImageMountain, vec2(U,V)).rgb;
+    vec3 KdMountain2K = texture(TextureImageMountain2K, vec2(U,V)).rgb;
+    vec3 KdMountain4K = texture(TextureImageMountain4K, vec2(U,V)).rgb;
     vec3 KdCaveEntrance1 = texture(TextureImageCaveEntrance1, vec2(U,V)).rgb;
     vec3 KdCaveEntrance2 = texture(TextureImageCaveEntrance2, vec2(U,V)).rgb;
 
@@ -440,6 +458,14 @@ void main()
     else if ( object_id == MOUNTAIN )
     {
         color.rgb = KdMountain * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == MOUNTAIN2K )
+    {
+        color.rgb = KdMountain2K * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == MOUNTAIN4K )
+    {
+        color.rgb = KdMountain4K * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
     else if ( object_id == CAVE_ENTRANCE1 )
     {
