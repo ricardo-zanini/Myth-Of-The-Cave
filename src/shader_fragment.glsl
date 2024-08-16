@@ -16,6 +16,7 @@ in vec2 texcoords;
 in vec3 tangent;
 in vec3 bitangent;
 in vec3 crossEdge;
+in float isOutCave;
 
 // Matrizes computadas no código C++ e enviadas para a GPU
 uniform mat4 model;
@@ -39,6 +40,10 @@ uniform mat4 projection;
 #define PRISIONER_CHAIN 13
 #define LADDER 14
 #define GREEK2 15
+#define GRASS 16
+#define MOUNTAIN 17
+#define CAVE_ENTRANCE1 18
+#define CAVE_ENTRANCE2 19
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -70,6 +75,14 @@ uniform sampler2D TextureImageLadder;
 uniform sampler2D TextureNormalLadder;
 uniform sampler2D TextureImageGreek2;
 uniform sampler2D TextureNormalGreek2;
+uniform sampler2D TextureImageGrass;
+uniform sampler2D TextureNormalGrass;
+uniform sampler2D TextureImageMountain;
+uniform sampler2D TextureNormalMountain;
+uniform sampler2D TextureImageCaveEntrance1;
+uniform sampler2D TextureNormalCaveEntrance1;
+uniform sampler2D TextureImageCaveEntrance2;
+uniform sampler2D TextureNormalCaveEntrance2;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -106,7 +119,15 @@ void main()
     vec4 p = position_world;
 
     // Ponto onde está localizada a fonte de luz
-    vec4 l_light_point = vec4(-14.0,1.0,15.5,1.0);
+    vec4 l_light_point;
+
+    if(isOutCave != 0.0f)
+    {
+        l_light_point = vec4(0.0,100.0,400.0,1.0);
+    }
+    else{
+        l_light_point = vec4(-14.0,1.0,15.5,1.0);
+    }
 
     // Normal do fragmento atual, interpolada pelo rasterizador a partir das
     // normais de cada vértice.
@@ -228,6 +249,59 @@ void main()
         l_light_point = vec4(TBN * l_light_point);
         camera_position = vec4(TBN * camera_position);*/
     }
+    else if ( object_id == GRASS )
+    {
+        // Propriedades espectrais
+        Kd = vec3(0.8,0.8,0.8);
+        Ka = vec3(1.0, 1.0, 1.0);
+        n = vec4(normalize(texture(TextureNormalGrass, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);
+    }
+    else if ( object_id == MOUNTAIN )
+    {
+        // Propriedades espectrais
+        Ka = vec3(1.0, 1.0, 1.0);
+        n = vec4(normalize(texture(TextureNormalMountain, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);
+    }
+    else if ( object_id == CAVE_ENTRANCE1 )
+    {
+        // Propriedades espectrais
+        // Propriedades espectrais
+        Kd = vec3(0.8,0.8,0.8);
+        Ks = vec3(0.5,0.5,0.5);
+        Ka = vec3(1.0, 1.0, 1.0);
+        q = 250.0;
+        n = vec4(normalize(texture(TextureNormalCaveEntrance1, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);
+    }
+    else if ( object_id == CAVE_ENTRANCE2 )
+    {
+        // Propriedades espectrais
+        // Propriedades espectrais
+        Kd = vec3(0.8,0.8,0.8);
+        Ks = vec3(0.5,0.5,0.5);
+        Ka = vec3(1.0, 1.0, 1.0);
+        q = 250.0;
+        n = vec4(normalize(texture(TextureNormalCaveEntrance2, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
+        p = vec4(TBN * normal);
+        l_light_point = vec4(TBN * l_light_point);
+        camera_position = vec4(TBN * camera_position);
+    }
+    else if ( ( object_id == GREEK_BODY || object_id == GREEK_HEAD) && isOutCave != 0.0f )
+    {
+        // Propriedades espectrais
+        Kd = vec3(0.8,0.8,0.8);
+        Ks = vec3(0.5,0.5,0.5);
+        Ka = vec3(1.0, 1.0, 1.0);
+    }
+
 
     // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
     vec4 l = normalize(l_light_point - p);
@@ -243,10 +317,20 @@ void main()
                   );
 
     // Espectro da fonte de iluminação
-    vec3 I = vec3(1.0, 0.5, 0.5); // PREENCH AQUI o espectro da fonte de luz
+    vec3 I;
 
     // Espectro da luz ambiente
-    vec3 Ia = vec3(0.2, 0.2, 0.2); // PREENCHA AQUI o espectro da luz ambiente
+    vec3 Ia;
+
+    if(isOutCave != 0.0f)
+    {
+        I = vec3(1.0, 1.0, 1.0);
+        Ia = vec3(1.0, 1.0, 1.0);
+    }
+    else{
+        I = vec3(1.0, 0.5, 0.5); // PREENCH AQUI o espectro da fonte de luz
+        Ia = vec3(0.2, 0.2, 0.2);
+    }
 
     // Termo difuso utilizando a lei dos cossenos de Lambert
     vec3 lambert_diffuse_term = Kd * I * max( 0, dot(n,l) ); // PREENCHA AQUI o termo difuso de Lambert
@@ -281,6 +365,10 @@ void main()
     vec3 KdPrisionerChain = texture(TextureImagePrisionerChain, vec2(U,V)).rgb;
     vec3 KdLadder = texture(TextureImageLadder, vec2(U,V)).rgb;
     vec3 KdGreek2 = texture(TextureImageGreek2, vec2(U,V)).rgb;
+    vec3 KdGrass = texture(TextureImageGrass, vec2(U,V)).rgb;
+    vec3 KdMountain = texture(TextureImageMountain, vec2(U,V)).rgb;
+    vec3 KdCaveEntrance1 = texture(TextureImageCaveEntrance1, vec2(U,V)).rgb;
+    vec3 KdCaveEntrance2 = texture(TextureImageCaveEntrance2, vec2(U,V)).rgb;
 
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
@@ -344,6 +432,22 @@ void main()
     else if ( object_id == GREEK2 )
     {
         color.rgb = KdGreek2 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == GRASS )
+    {
+        color.rgb = KdGrass * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == MOUNTAIN )
+    {
+        color.rgb = KdMountain * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == CAVE_ENTRANCE1 )
+    {
+        color.rgb = KdCaveEntrance1 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == CAVE_ENTRANCE2 )
+    {
+        color.rgb = KdCaveEntrance2 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
 
 

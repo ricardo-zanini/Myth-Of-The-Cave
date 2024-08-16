@@ -8,6 +8,7 @@ layout (location = 2) in vec2 texture_coefficients;
 layout (location = 3) in vec3 tangents;
 layout (location = 4) in vec3 bitangents;
 layout (location = 5) in vec3 crossEdges;
+layout (location = 6) in float outCave;
 
 // Matrizes computadas no código C++ e enviadas para a GPU
 uniform mat4 model;
@@ -25,6 +26,7 @@ out vec2 texcoords;
 out vec3 tangent;
 out vec3 bitangent;
 out vec3 crossEdge;
+out float isOutCave;
 
 void main()
 {
@@ -73,5 +75,6 @@ void main()
     tangent = tangents;
     bitangent = bitangents;
     crossEdge = crossEdges;
+    isOutCave = outCave;
 }
 

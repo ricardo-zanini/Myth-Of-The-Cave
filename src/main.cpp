@@ -69,6 +69,10 @@
 #define PRISIONER_CHAIN 13
 #define LADDER 14
 #define GREEK2 15
+#define GRASS 16
+#define MOUNTAIN 17
+#define CAVE_ENTRANCE1 18
+#define CAVE_ENTRANCE2 19
 
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
@@ -144,6 +148,9 @@ void AddTitle(glm::mat4 model);
 void AddPrisioner(glm::mat4 model, bool showBody);
 void AddCampfire(glm::mat4 model);
 void AddGreek2(glm::mat4 model);
+void AddCaveEntrance(glm::mat4 model);
+void AddGrass(glm::mat4 model);
+void AddMountain(glm::mat4 model);
 
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
@@ -263,6 +270,12 @@ float prev_time;
 
 //Variável que indica se o jogo está na tela inicial ou não
 bool g_InitialScreen = true;
+
+//Variável que indica se o jogador está fora da caverna ou não
+bool g_OutCave = false;
+
+//Indica a primeira posição da grama
+glm::vec3 g_GrassInit = glm::vec3(0.0f,0.0f,300.0f);
 
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = true;
@@ -393,6 +406,14 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/ladder/ladder_material_normal.png","normal"); // TextureNormalLadder
     LoadTextureImage("../../data/greek2/RGB_379bb9ffa60c48d994f2b3773c413794_Pericles_albedo.jpeg",""); // TextureImageGreek2
     LoadTextureImage("../../data/greek2/N_0eed01a070d14ef2ab5f584e06ce6ab1_Pericles_normal.jpeg","normal"); // TextureNormalGreek2
+    LoadTextureImage("../../data/grass/RGB_5f2957af13ae4804bc42e7bbc7b85eae_Gras_Col_low.jpg",""); // TextureImageGrass
+    LoadTextureImage("../../data/grass/N_3f22c42826694c4faf6f322ec4a2c50b_Gras_Nor_2K_I.jpeg","normal"); // TextureNormalGrass
+    LoadTextureImage("../../data/mountain/RGB_b2bf6ec020774c3e8b09917a167753a5_MountainAlbedo4096.jpg",""); // TextureImageMountain
+    LoadTextureImage("../../data/mountain/N_4e24f5b6ede843009d3a281f6258ce2a_MountainNormal4096.jpeg","normal"); // TextureNormalMountain
+    LoadTextureImage("../../data/cave_entrance/cave_albedo.jpg",""); // TextureImageCaveEntrance1
+    LoadTextureImage("../../data/cave_entrance/cave_normal.png","normal"); // TextureNormalCaveEntrance1
+    LoadTextureImage("../../data/cave_entrance/aerial_rocks_04_diff_4k.jpg",""); // TextureImageCaveEntrance2
+    LoadTextureImage("../../data/cave_entrance/aerial_rocks_04_nor_gl_4k.png","normal"); // TextureNormalCaveEntrance2
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
@@ -428,6 +449,19 @@ int main(int argc, char* argv[])
     ComputeNormals(&greek2model);
     BuildTrianglesAndAddToVirtualScene(&greek2model);
 
+    ObjModel caveEntrancemodel("../../data/cave_entrance/cave_entrance.obj");
+    ComputeNormals(&caveEntrancemodel);
+    BuildTrianglesAndAddToVirtualScene(&caveEntrancemodel);
+
+    ObjModel grassmodel("../../data/grass/grass.obj");
+    ComputeNormals(&grassmodel);
+    BuildTrianglesAndAddToVirtualScene(&grassmodel);
+
+    ObjModel mountainmodel("../../data/mountain/mountain.obj");
+    ComputeNormals(&mountainmodel);
+    BuildTrianglesAndAddToVirtualScene(&mountainmodel);
+
+
     if ( argc > 1 )
     {
         ObjModel model(argv[1]);
@@ -445,9 +479,6 @@ int main(int argc, char* argv[])
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
-    // Posicao inicial do jogador
-    glm::vec4 player_position = glm::vec4(0.0,0.0,0.0,1.0f);
-
     prev_time = (float)glfwGetTime();
 
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
@@ -461,7 +492,7 @@ int main(int argc, char* argv[])
         // Conversaremos sobre sistemas de cores nas aulas de Modelos de Iluminação.
         //
         //           R     G     B     A
-        glClearColor(0.0f,0.0f,0.0f,0.0f);
+        glClearColor(0.5294117647f,0.80784313725f,0.92156862745f,0.0f);  // cor do céu
 
         // "Pintamos" todos os pixels do framebuffer com a cor definida acima,
         // e também resetamos todos os pixels do Z-buffer (depth buffer).
@@ -481,17 +512,17 @@ int main(int argc, char* argv[])
         // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
         // e ScrollCallback().
         float r = g_CameraDistance;
-        float y = player_position.y + r*sin(g_CameraPhi);
-        float z = player_position.z + r*cos(g_CameraPhi)*cos(g_CameraTheta);
-        float x = player_position.x + r*cos(g_CameraPhi)*sin(g_CameraTheta);
+        float y = r*sin(g_CameraPhi);
+        float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
+        float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
 
         // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
         // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
         if(g_InitialScreen)
         {
             camera_position_c  = glm::vec4(-14.0f + 9.0f*cos(g_CameraPhi)*sin(g_CameraTheta),
-                                           1.0f + r*sin(g_CameraPhi),
-                                           15.5f + r*cos(g_CameraPhi)*cos(g_CameraTheta),
+                                           1.0f + y,
+                                           15.5f + z,
                                            1.0f);
             camera_lookat_l    = glm::vec4(-14.0f,1.0f+2.7f,15.5f,1.0f);
 
@@ -539,42 +570,118 @@ int main(int argc, char* argv[])
 
         MovePlayer();
 
-        //----------------------------- CAVERNA ------------------------------------------
-
-        AddCave(); //model definida dentro da função
-
-        //----------------------------- ESCADA ------------------------------------------
-
-        AddLadder(Matrix_Rotate_Y(-M_PI/8)
-            * Matrix_Translate(-11.0f,0.4f,-0.9f)
-            * Matrix_Scale(0.02f,0.02f,0.02f));
-
-        //----------------------------- TÍTULO ------------------------------------------
-
-        //Mostra o título apenas se o jogo estiver na tela inicial
-        if(g_InitialScreen)
+        if(!g_OutCave)
         {
-            AddTitle(Matrix_Rotate_Y(M_PI/2)
-                * Matrix_Translate(-15.5f,4.5f,-15.0f)
-                * Matrix_Scale(0.02f,0.02f,0.02f)
-                * Matrix_Rotate_X(M_PI/16));
+            //----------------------------- CAVERNA ------------------------------------------
+
+            AddCave(); //model definida dentro da função
+
+            //----------------------------- ESCADA ------------------------------------------
+
+            AddLadder(Matrix_Rotate_Y(-M_PI/8)
+                * Matrix_Translate(-11.0f,0.4f,-0.9f)
+                * Matrix_Scale(0.02f,0.02f,0.02f));
+
+            //----------------------------- TÍTULO ------------------------------------------
+
+            //Mostra o título apenas se o jogo estiver na tela inicial
+            if(g_InitialScreen)
+            {
+                AddTitle(Matrix_Rotate_Y(M_PI/2)
+                    * Matrix_Translate(-15.5f,4.5f,-15.0f)
+                    * Matrix_Scale(0.02f,0.02f,0.02f)
+                    * Matrix_Rotate_X(M_PI/16));
+            }
+
+            //----------------------------- PRISIONEIRO ------------------------------------------
+
+            AddPrisioner(Matrix_Translate(5.0f,3.0f,20.0f)
+                * Matrix_Scale(0.017f,0.017f,0.017f),true);
+
+            AddPrisioner(Matrix_Translate(10.0f,3.0f,20.0f)
+                * Matrix_Scale(0.017f,0.017f,0.017f),false);
+
+            //----------------------------- SEGUNDO GREGO ------------------------------------------
+
+            AddGreek2(Matrix_Scale(0.045f,0.045f,0.045f));
+
+        }
+        else{
+
+            //----------------------------- ENTRADA DA CAVERNA ------------------------------------------
+
+            AddCaveEntrance(Matrix_Translate(-50.0f,4.0f,420.0f)
+                            * Matrix_Scale(10.0f,10.0f,10.0f)
+                                * Matrix_Rotate_Y(M_PI + M_PI/4));
+
+            //----------------------------- MONTANHAS ------------------------------------------
+
+            //Configuração das montanhas:
+            //   a
+            //  ┌ ┐
+            //c     d
+            //  └ ┘
+            //   b
+
+
+            // Adiciona montanha "┌"
+            AddMountain(Matrix_Translate(0.0f,6.0f,150.0f + g_GrassInit.z)
+                        * Matrix_Scale(150.0f,150.0f,150.0f)
+                            * Matrix_Rotate_Y(M_PI));
+
+            // Adiciona montanha "┐"
+            AddMountain(Matrix_Translate(-136.0f,6.0f,150.0f + g_GrassInit.z)
+                        * Matrix_Scale(150.0f,150.0f,150.0f)
+                            * Matrix_Rotate_Y(M_PI));
+
+            // Adiciona montanha "a"
+            AddMountain(Matrix_Translate(-68.0f,6.0f,68.0f + 150.0f + g_GrassInit.z)
+                        * Matrix_Scale(150.0f,150.0f,150.0f)
+                            * Matrix_Rotate_Y(M_PI));
+
+            // Adiciona montanha "└"
+            AddMountain(Matrix_Translate(0.0f,6.0f,-136.0f + 150.0f + g_GrassInit.z)
+                        * Matrix_Scale(150.0f,150.0f,150.0f)
+                            * Matrix_Rotate_Y(-M_PI_2));
+
+            // Adiciona montanha "c"
+            AddMountain(Matrix_Translate(68.0f,6.0f,-68.0f + 150.0f + g_GrassInit.z)
+                        * Matrix_Scale(150.0f,150.0f,150.0f)
+                            * Matrix_Rotate_Y(-M_PI_2));
+
+            // Adiciona montanha "┘"
+            AddMountain(Matrix_Translate(-136.0f,6.0f,-136.0f + 150.0f + g_GrassInit.z)
+                        * Matrix_Scale(150.0f,150.0f,150.0f)
+                            * Matrix_Rotate_Y(-M_PI_2));
+
+            // Adiciona montanha "b"
+            AddMountain(Matrix_Translate(-68.0f,6.0f,-136.0f*1.5f + 150.0f + g_GrassInit.z)
+                        * Matrix_Scale(150.0f,150.0f,150.0f));
+
+            // Adiciona montanha "d"
+            AddMountain(Matrix_Translate(-136.0f * 1.5f,6.0f,-68.0f + 150.0f + g_GrassInit.z)
+                        * Matrix_Scale(150.0f,150.0f,150.0f)
+                            * Matrix_Rotate_Y(M_PI));
+
         }
 
-        //----------------------------- PRISIONEIRO ------------------------------------------
-
-        AddPrisioner(Matrix_Translate(5.0f,3.0f,20.0f)
-            * Matrix_Scale(0.017f,0.017f,0.017f),true);
-
-        AddPrisioner(Matrix_Translate(10.0f,3.0f,20.0f)
-            * Matrix_Scale(0.017f,0.017f,0.017f),false);
+        //Objetos transparentes são sempre desenhados (por facilidade)
 
         //----------------------------- FOGUEIRA ------------------------------------------
 
         AddCampfire(Matrix_Translate(-14.0f,0.0f,15.5f));
 
-        //----------------------------- SEGUNDO GREGO ------------------------------------------
+        //----------------------------- GRAMA ------------------------------------------
 
-        AddGreek2(Matrix_Scale(0.045f,0.045f,0.045f));
+        for(int i = 0; i < 10; i++)
+        {
+            for(int j = 0; j < 12; j++)
+            {
+                AddGrass(Matrix_Translate(g_GrassInit.x - 29.0f * i,
+                                            g_GrassInit.y,
+                                                g_GrassInit.z + 12.0f * j));
+            }
+        }
 
 
         // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
@@ -766,6 +873,14 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalLadder"), 21);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageGreek2"), 22);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalGreek2"), 23);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageGrass"), 24);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalGrass"), 25);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageMountain"), 26);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalMountain"), 27);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveEntrance1"), 28);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveEntrance1"), 29);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveEntrance2"), 30);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveEntrance2"), 31);
     glUseProgram(0);
 }
 
@@ -866,6 +981,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
     std::vector<glm::vec3> tangents;
     std::vector<glm::vec3> bitangents;
     std::vector<glm::vec3> crossEdges;
+    std::vector<float> isOutCave;
 
     for (size_t shape = 0; shape < model->shapes.size(); ++shape)
     {
@@ -929,33 +1045,43 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                     texture_coefficients.push_back( v );
                 }
 
+                //Inidicador se o personagem saiu da caverna ou não
+                if(g_OutCave)
+                {
+                    isOutCave.push_back(1.0f);
+                }
+                else{
+                    isOutCave.push_back(0.0f);
+                }
+
             }
+
 
             //------------------------ Calculo usado para normal mapping -------------
 
-            tinyobj::index_t idx = model->shapes[shape].mesh.indices[3*triangle + 0];
-            glm::vec3 v0 = glm::vec3(model->attrib.vertices[3*idx.vertex_index + 0],
-                                     model->attrib.vertices[3*idx.vertex_index + 1],
-                                     model->attrib.vertices[3*idx.vertex_index + 2]);
+            tinyobj::index_t idxAux = model->shapes[shape].mesh.indices[3*triangle + 0];
+            glm::vec3 v0 = glm::vec3(model->attrib.vertices[3*idxAux.vertex_index + 0],
+                                     model->attrib.vertices[3*idxAux.vertex_index + 1],
+                                     model->attrib.vertices[3*idxAux.vertex_index + 2]);
 
-            glm::vec2 uv0 = glm::vec2(model->attrib.texcoords[2*idx.texcoord_index + 0],
-                                      model->attrib.texcoords[2*idx.texcoord_index + 1]);
+            glm::vec2 uv0 = glm::vec2(model->attrib.texcoords[2*idxAux.texcoord_index + 0],
+                                      model->attrib.texcoords[2*idxAux.texcoord_index + 1]);
 
-            idx = model->shapes[shape].mesh.indices[3*triangle + 1];
-            glm::vec3 v1 = glm::vec3(model->attrib.vertices[3*idx.vertex_index + 0],
-                                     model->attrib.vertices[3*idx.vertex_index + 1],
-                                     model->attrib.vertices[3*idx.vertex_index + 2]);
+            idxAux = model->shapes[shape].mesh.indices[3*triangle + 1];
+            glm::vec3 v1 = glm::vec3(model->attrib.vertices[3*idxAux.vertex_index + 0],
+                                     model->attrib.vertices[3*idxAux.vertex_index + 1],
+                                     model->attrib.vertices[3*idxAux.vertex_index + 2]);
 
-            glm::vec2 uv1 = glm::vec2(model->attrib.texcoords[2*idx.texcoord_index + 0],
-                                      model->attrib.texcoords[2*idx.texcoord_index + 1]);
+            glm::vec2 uv1 = glm::vec2(model->attrib.texcoords[2*idxAux.texcoord_index + 0],
+                                      model->attrib.texcoords[2*idxAux.texcoord_index + 1]);
 
-            idx = model->shapes[shape].mesh.indices[3*triangle + 2];
-            glm::vec3 v2 = glm::vec3(model->attrib.vertices[3*idx.vertex_index + 0],
-                                     model->attrib.vertices[3*idx.vertex_index + 1],
-                                     model->attrib.vertices[3*idx.vertex_index + 2]);
+            idxAux = model->shapes[shape].mesh.indices[3*triangle + 2];
+            glm::vec3 v2 = glm::vec3(model->attrib.vertices[3*idxAux.vertex_index + 0],
+                                     model->attrib.vertices[3*idxAux.vertex_index + 1],
+                                     model->attrib.vertices[3*idxAux.vertex_index + 2]);
 
-            glm::vec2 uv2 = glm::vec2(model->attrib.texcoords[2*idx.texcoord_index + 0],
-                                      model->attrib.texcoords[2*idx.texcoord_index + 1]);
+            glm::vec2 uv2 = glm::vec2(model->attrib.texcoords[2*idxAux.texcoord_index + 0],
+                                      model->attrib.texcoords[2*idxAux.texcoord_index + 1]);
 
             // Edges of the triangle : position delta
             glm::vec3 deltaPos1 = v1-v0;
@@ -1068,6 +1194,17 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
         glBufferSubData(GL_ARRAY_BUFFER, 0, crossEdges.size() * sizeof(glm::vec3), crossEdges.data());
         location = 5; // "(location = 1)" em "shader_vertex.glsl"
         number_of_dimensions = 3; // vec2 em "shader_vertex.glsl"
+        glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(location);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        GLuint VBO_isOutCave_id;
+        glGenBuffers(1, &VBO_isOutCave_id);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_isOutCave_id);
+        glBufferData(GL_ARRAY_BUFFER, isOutCave.size() * sizeof(float), NULL, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, isOutCave.size() * sizeof(float), isOutCave.data());
+        location = 6; // "(location = 1)" em "shader_vertex.glsl"
+        number_of_dimensions = 1; // vec2 em "shader_vertex.glsl"
         glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(location);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -1451,6 +1588,28 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             speed = normal_speed;
         }
 
+        // Se o usuário apertar space ele troca o mapa.
+        if (key == GLFW_KEY_SPACE  && action == GLFW_PRESS)
+        {
+            g_OutCave = !g_OutCave;
+
+            if(g_OutCave)
+            {
+                g_CameraTheta = M_PI/4;
+                g_CameraPhi = 0.0f;
+                g_TorsoPositionX = -60.0f;
+                g_TorsoPositionY = 0.0f;
+                g_TorsoPositionZ = 410.0f;
+            }
+            else{
+                g_CameraTheta = M_PI_2;
+                g_CameraPhi = 0.0f;
+                g_TorsoPositionX = 5.0f;
+                g_TorsoPositionY = 0.0f;
+                g_TorsoPositionZ = 25.0f;
+            }
+        }
+
     }
     else{
         // Se o usuário apertar a tecla enter na tela inicial, começa o jogo.
@@ -1583,6 +1742,7 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
     if ( ellapsed_seconds > 1.0f )
     {
         numchars = snprintf(buffer, 20, "%.2f fps", ellapsed_frames / ellapsed_seconds);
+        //numchars = snprintf(buffer, 20, "%f,%f", g_TorsoPositionX, g_TorsoPositionZ);
 
         old_seconds = seconds;
         ellapsed_frames = 0;
@@ -2580,6 +2740,57 @@ void AddGreek2(glm::mat4 model){
     glUniform1i(g_object_id_uniform, GREEK2);
     DrawVirtualObject("pericles");
 }
+
+void AddCaveEntrance(glm::mat4 model){
+
+    // Desenhamos a entrada da caverna
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, CAVE_ENTRANCE2);
+    DrawVirtualObject("cave_entrance_01");
+
+    model = model * Matrix_Scale(1.0f,1.0f,0.5f);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, CAVE_ENTRANCE1);
+    DrawVirtualObject("cave_entrance_00");
+
+}
+
+void AddGrass(glm::mat4 model){
+
+    // Permite o desenho de objetos transparentes
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Desenhamos a grama
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, GRASS);
+    DrawVirtualObject("grass");
+}
+
+void AddMountain(glm::mat4 model){
+
+    // Desenhamos a montanha
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, MOUNTAIN);
+    DrawVirtualObject("mountain_0");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, MOUNTAIN);
+    DrawVirtualObject("mountain_1");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, MOUNTAIN);
+    DrawVirtualObject("mountain_2");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, MOUNTAIN);
+    DrawVirtualObject("mountain_3");
+
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, MOUNTAIN);
+    DrawVirtualObject("mountain_4");
+}
+
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
