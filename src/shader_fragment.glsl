@@ -46,6 +46,8 @@ uniform mat4 projection;
 #define MOUNTAIN4K 19
 #define CAVE_ENTRANCE1 20
 #define CAVE_ENTRANCE2 21
+#define RABBIT 22
+#define BEAR 23
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -80,6 +82,8 @@ uniform sampler2D TextureImageCaveEntrance1;
 uniform sampler2D TextureNormalCaveEntrance1;
 uniform sampler2D TextureImageCaveEntrance2;
 uniform sampler2D TextureNormalCaveEntrance2;
+uniform sampler2D TextureImageRabbit;
+uniform sampler2D TextureImageBear;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -365,7 +369,7 @@ void main()
     vec3 blinn_phong_specular_term  = Ks * I * pow( max( 0, dot(n,h) ), q_linha ); // PREENCH AQUI o termo especular de Phong
 
 
-    // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
+    // Obtemos a refletância difusa a partir da leitura da imagem da textura
     vec3 KdCampfire = texture(TextureImageCampfire, vec2(U,V)).rgb;
     vec3 KdFire = texture(TextureImageFire, vec2(U,V)).rgb;
     vec3 KdCaveWalls = texture(TextureImageCaveWalls, vec2(U,V)).rgb;
@@ -387,9 +391,25 @@ void main()
     vec3 KdMountain4K = texture(TextureImageMountain4K, vec2(U,V)).rgb;
     vec3 KdCaveEntrance1 = texture(TextureImageCaveEntrance1, vec2(U,V)).rgb;
     vec3 KdCaveEntrance2 = texture(TextureImageCaveEntrance2, vec2(U,V)).rgb;
+    vec3 KdRabbit = texture(TextureImageRabbit, vec2(U,V)).rgb;
+    vec3 KdBear = texture(TextureImageBear, vec2(U,V)).rgb;
 
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
+
+    // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
+    // necessário:
+    // 1) Habilitar a operação de "blending" de OpenGL logo antes de realizar o
+    //    desenho dos objetos transparentes, com os comandos abaixo no código C++:
+    //      glEnable(GL_BLEND);
+    //      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // 2) Realizar o desenho de todos objetos transparentes *após* ter desenhado
+    //    todos os objetos opacos; e
+    // 3) Realizar o desenho de objetos transparentes ordenados de acordo com
+    //    suas distâncias para a câmera (desenhando primeiro objetos
+    //    transparentes que estão mais longe da câmera).
+    // Alpha default = 1 = 100% opaco = 0% transparente
+    color.a = 1;
 
     if ( object_id == CAMPFIRE )
     {
@@ -399,7 +419,12 @@ void main()
     {
         color.rgb = KdFire * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
-    else if ( object_id == CAVE || object_id == CAVE_WALLS )
+    else if ( object_id == CAVE )
+    {
+        color.rgb = KdCaveWalls * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+        color.a = 0.0f;
+    }
+    else if ( object_id == CAVE_WALLS )
     {
         color.rgb = KdCaveWalls * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
@@ -475,21 +500,14 @@ void main()
     {
         color.rgb = KdCaveEntrance2 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
-
-
-    // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
-    // necessário:
-    // 1) Habilitar a operação de "blending" de OpenGL logo antes de realizar o
-    //    desenho dos objetos transparentes, com os comandos abaixo no código C++:
-    //      glEnable(GL_BLEND);
-    //      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // 2) Realizar o desenho de todos objetos transparentes *após* ter desenhado
-    //    todos os objetos opacos; e
-    // 3) Realizar o desenho de objetos transparentes ordenados de acordo com
-    //    suas distâncias para a câmera (desenhando primeiro objetos
-    //    transparentes que estão mais longe da câmera).
-    // Alpha default = 1 = 100% opaco = 0% transparente
-    color.a = 1;
+    else if ( object_id == RABBIT )
+    {
+        color.rgb = KdRabbit * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == BEAR )
+    {
+        color.rgb = KdBear * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
