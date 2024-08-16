@@ -992,7 +992,7 @@
 	<intrin.h>
 	<arm_neon.h>
 
-1723820554 source:c:\users\berna\onedrive\documentos\bernardo\ufrgs\semestre 4\fundamentos de computação gráfica\mythofthecave\src\textrendering.cpp
+1723839002 source:c:\users\berna\onedrive\documentos\bernardo\ufrgs\semestre 4\fundamentos de computação gráfica\mythofthecave\src\textrendering.cpp
 	<string>
 	<glad/glad.h>
 	<GLFW/glfw3.h>
@@ -1608,7 +1608,7 @@
 	<array>
 	"mapbox/earcut.hpp"
 
-1723835146 source:c:\users\berna\onedrive\documentos\bernardo\ufrgs\semestre 4\fundamentos de computação gráfica\mythofthecave\src\main.cpp
+1723839002 source:c:\users\berna\onedrive\documentos\bernardo\ufrgs\semestre 4\fundamentos de computação gráfica\mythofthecave\src\main.cpp
 	<cmath>
 	<cstdio>
 	<cstdlib>
