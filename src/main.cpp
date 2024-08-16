@@ -147,10 +147,21 @@ void AddLadder(glm::mat4 model);
 void AddTitle(glm::mat4 model);
 void AddPrisioner(glm::mat4 model, bool showBody);
 void AddCampfire(glm::mat4 model);
-void AddGreek2(glm::mat4 model);
+void AddGreek2(glm::mat4 model, GLFWwindow* window);
 void AddCaveEntrance(glm::mat4 model);
 void AddGrass(glm::mat4 model);
 void AddMountain(glm::mat4 model);
+
+void colision_player_plane_points(glm::mat4 model, int indice, ObjModel* ObjModel);
+void colision_player_sphere_points(glm::mat4 model, char* object, float radius);
+void colision_player_box_points(glm::mat4 model, char* object);
+
+bool interact_radius(glm::mat4 model, char* object, float radius_expand);
+
+float min3(float n1, float n2, float n3);
+float max3(float n1, float n2, float n3);
+
+void TextRendering_ShowChatCharacters(GLFWwindow* window, char* mensagem, float scale);
 
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
@@ -270,6 +281,9 @@ float prev_time;
 
 //Variável que indica se o jogo está na tela inicial ou não
 bool g_InitialScreen = true;
+bool movement_restricted = false;
+
+glm::vec4 movement_normal = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
 //Variável que indica se o jogador está fora da caverna ou não
 bool g_OutCave = false;
@@ -296,6 +310,18 @@ glm::vec4 camera_up_vector;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
+
+
+// Construímos a representação de objetos geométricos através de malhas de triângulos
+ObjModel cavemodel("../../data/cave/cave.obj");
+ObjModel campfiremodel("../../data/campfire/Campfire.obj");
+ObjModel greekmodel("../../data/greek/greek.obj");
+ObjModel prisionermodel("../../data/prisioner/prisioner.obj");
+ObjModel grutamodel("../../data/gruta/gruta.obj");
+ObjModel laddermodel("../../data/ladder/ladder.obj");
+ObjModel titlemodel("../../data/title/title.obj");
+ObjModel greek2model("../../data/greek2/greek2.obj");
+
 
 int main(int argc, char* argv[])
 {
@@ -417,35 +443,27 @@ int main(int argc, char* argv[])
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    ObjModel cavemodel("../../data/cave/cave.obj");
     ComputeNormals(&cavemodel);
     BuildTrianglesAndAddToVirtualScene(&cavemodel);
 
-    ObjModel campfiremodel("../../data/campfire/Campfire.obj");
     ComputeNormals(&campfiremodel);
     BuildTrianglesAndAddToVirtualScene(&campfiremodel);
 
-    ObjModel greekmodel("../../data/greek/greek.obj");
     ComputeNormals(&greekmodel);
     BuildTrianglesAndAddToVirtualScene(&greekmodel);
 
-    ObjModel prisionermodel("../../data/prisioner/prisioner.obj");
     ComputeNormals(&prisionermodel);
     BuildTrianglesAndAddToVirtualScene(&prisionermodel);
 
-    ObjModel grutamodel("../../data/gruta/gruta.obj");
     ComputeNormals(&grutamodel);
     BuildTrianglesAndAddToVirtualScene(&grutamodel);
 
-    ObjModel laddermodel("../../data/ladder/ladder.obj");
     ComputeNormals(&laddermodel);
     BuildTrianglesAndAddToVirtualScene(&laddermodel);
 
-    ObjModel titlemodel("../../data/title/title.obj");
     ComputeNormals(&titlemodel);
     BuildTrianglesAndAddToVirtualScene(&titlemodel);
 
-    ObjModel greek2model("../../data/greek2/greek2.obj");
     ComputeNormals(&greek2model);
     BuildTrianglesAndAddToVirtualScene(&greek2model);
 
@@ -603,7 +621,7 @@ int main(int argc, char* argv[])
 
             //----------------------------- SEGUNDO GREGO ------------------------------------------
 
-            AddGreek2(Matrix_Scale(0.045f,0.045f,0.045f));
+            AddGreek2(Matrix_Scale(0.045f,0.045f,0.045f), window);
 
         }
         else{
@@ -683,13 +701,13 @@ int main(int argc, char* argv[])
             }
         }
 
-
         // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
         TextRendering_ShowProjection(window);
 
         // Imprimimos na tela informação sobre o número de quadros renderizados
         // por segundo (frames per second).
         TextRendering_ShowFramesPerSecond(window);
+        
 
         // O framebuffer onde OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -2243,7 +2261,7 @@ void AddPlayer(glm::mat4 model){
 
 void MovePlayer(){
     float angle_45 = M_PI / 4;
-
+    float repele_player = 0.05;
 
     if(g_AngleX_leg > angle_45){
         movement_AngleX_leg = true;
@@ -2256,14 +2274,22 @@ void MovePlayer(){
     }
 
     // Calculo o angulo entre um vetor saindo do personagem e apontando para X e o vetor da câmera
-    glm::vec4 plano_X   = glm::vec4(camera_lookat_l.x + 1, camera_lookat_l.y, camera_lookat_l.z, 1.0f) - camera_lookat_l;
-    glm::vec4 plano_Z   = glm::vec4(camera_lookat_l.x, camera_lookat_l.y, camera_lookat_l.z + 1.0f, 1.0f) - camera_lookat_l;
+    glm::vec4 plano_X   = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+    glm::vec4 plano_Z   = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
     glm::vec4 view_aux  = glm::vec4(camera_view_vector.x, 0.0f, camera_view_vector.z, 0.0f);
 
-    float angulo_X = dotproduct(plano_X, view_aux) / (norm(plano_X) * norm(view_aux));
-    float angulo_Z = dotproduct(plano_Z, view_aux) / (norm(plano_Z) * norm(view_aux));
+    float angulo_X;
+    float angulo_Z;
 
-    // Erro: função acos(x) retorna NaN (Not a Number) para -1 > x ou x > 1
+    if(movement_restricted == false){
+        angulo_X = dotproduct(plano_X, view_aux) / (norm(plano_X) * norm(view_aux));
+        angulo_Z = dotproduct(plano_Z, view_aux) / (norm(plano_Z) * norm(view_aux));
+    }else{
+        angulo_X = dotproduct(plano_X, movement_normal) / (norm(plano_X) * norm(movement_normal));
+        angulo_Z = dotproduct(plano_Z, movement_normal) / (norm(plano_Z) * norm(movement_normal));
+    }
+
+    // Erro: função acos(x) retorna NaN (Not a Number) para -1 > x or x > 1
     if(angulo_X < -1.0f)
     {
         angulo_X = acos(-1.0f);
@@ -2288,23 +2314,42 @@ void MovePlayer(){
         angulo_Z = acos(angulo_Z);
     }
 
-    g_AngleY_torso = angulo_X;
+    if(movement_restricted == false){
+        g_AngleY_torso = angulo_X;
+    }
 
     //------------------------------------------------------
 
+    int movement_signal = 1.0;
     if(g_WKeyPressed == true){
-        g_TorsoPositionZ = g_TorsoPositionZ + cos(angulo_Z) * speed * delta_t;
-        g_TorsoPositionX = g_TorsoPositionX + cos(angulo_X) * speed * delta_t;
+        if(movement_restricted == true){
+            movement_restricted = false;
+            movement_signal = 1.0f;
+        }else{
+            movement_signal = 1.0f;
+        }
+        
+        g_TorsoPositionZ = g_TorsoPositionZ + cos(angulo_Z) * movement_signal * speed * delta_t;
+        g_TorsoPositionX = g_TorsoPositionX + cos(angulo_X) * movement_signal * speed * delta_t;
     }
-    if(g_SKeyPressed == true){
-        g_TorsoPositionZ = g_TorsoPositionZ - cos(angulo_Z) * speed * delta_t;
-        g_TorsoPositionX = g_TorsoPositionX - cos(angulo_X) * speed * delta_t;
-    }
+    // else if(g_SKeyPressed == true){
+    //     if(movement_restricted == true){
+    //         movement_restricted = false;
+
+    //             movement_signal = -1.0f;
+
+    //     }else{
+    //         movement_signal = -1.0f;
+    //     }
+
+    //     g_TorsoPositionZ = g_TorsoPositionZ + cos(angulo_Z) * movement_signal * speed * delta_t;
+    //     g_TorsoPositionX = g_TorsoPositionX + cos(angulo_X) * movement_signal * speed * delta_t;
+    // }
     if(g_AKeyPressed == true){
-       g_CameraTheta = g_CameraTheta + speed * delta_t;
+        g_CameraTheta = g_CameraTheta + speed * delta_t;
     }
     if(g_DKeyPressed == true){
-       g_CameraTheta = g_CameraTheta - speed * delta_t;
+        g_CameraTheta = g_CameraTheta - speed * delta_t;
     }
     if(g_COMMAKeyPressed == true)
     {
@@ -2326,6 +2371,7 @@ void AddCave(){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, CAVE);
     DrawVirtualObject("cave_map");
+    colision_player_plane_points(model, 0, &cavemodel);
 
     model = Matrix_Rotate_X(-M_PI_2)
             * Matrix_Rotate_Z(M_PI)
@@ -2334,6 +2380,7 @@ void AddCave(){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, CAVE);
     DrawVirtualObject("cave_map");
+    colision_player_plane_points(model, 0, &cavemodel);
 
     // Desenhamos paredes da caverna
     model = Matrix_Rotate_X(-M_PI_2)
@@ -2386,6 +2433,7 @@ void AddLadder(glm::mat4 model){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, LADDER);
     DrawVirtualObject("ladder_ladder_material_0");
+    colision_player_box_points(model, "ladder_ladder_material_0");
 
 }
 
@@ -2432,6 +2480,7 @@ void AddPrisioner(glm::mat4 model, bool showBody){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, PRISIONER_ROCK);
     DrawVirtualObject("Rock_Rock_0");
+    colision_player_box_points(model, "Rock_Rock_0");
 
     // Desenhamos as partes das correntes que prendem o prisioneiro
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -2609,6 +2658,7 @@ void AddCampfire(glm::mat4 model){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, CAMPFIRE);
     DrawVirtualObject("Campfire");
+    colision_player_sphere_points(model, "Campfire", 1.6f);
 
     // Permite o desenho de objetos transparentes
     glEnable(GL_BLEND);
@@ -2733,12 +2783,16 @@ void AddCampfire(glm::mat4 model){
 
 }
 
-void AddGreek2(glm::mat4 model){
+void AddGreek2(glm::mat4 model, GLFWwindow* window){
 
     // Desenhamos o segundo modelo de grego
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, GREEK2);
     DrawVirtualObject("pericles");
+    colision_player_box_points(model, "pericles");
+    if(interact_radius(model, "pericles", 2.0f) == true){
+        TextRendering_ShowChatCharacters(window, "Meu pai é foda eu sou fodinha ele pega as coroas e eu curso FCG", 1.5f);
+    }
 }
 
 void AddCaveEntrance(glm::mat4 model){
@@ -2789,6 +2843,252 @@ void AddMountain(glm::mat4 model){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, MOUNTAIN);
     DrawVirtualObject("mountain_4");
+
+}
+
+void colision_player_plane_points(glm::mat4 model, int indice, ObjModel* ObjModel){
+    // Tamanho do cubo do jogador
+    float range_cubo = 0.5f;
+
+    // Centro do Jogador
+    glm::vec4 player_center_point = glm::vec4(g_TorsoPositionX, g_TorsoPositionY + 1.0f, g_TorsoPositionZ, 1.0f);
+
+    std::vector<GLuint> indices;
+    size_t first_index = indices.size();
+    size_t num_triangles = ObjModel->shapes[indice].mesh.num_face_vertices.size();
+
+    glm::vec4 view_aux  = glm::vec4(camera_view_vector.x, 0.0f, camera_view_vector.z, 0.0f);
+
+    for (size_t triangle = 0; triangle < num_triangles; ++triangle)
+    {
+        //------------------------ PONTO A ---------------------------------
+
+        tinyobj::index_t idx1 = ObjModel->shapes[indice].mesh.indices[3*triangle];
+
+        indices.push_back(first_index + 3*triangle);
+
+        glm::vec4 pA_aux = glm::vec4(
+            ObjModel->attrib.vertices[3*idx1.vertex_index + 0],
+            ObjModel->attrib.vertices[3*idx1.vertex_index + 1],
+            ObjModel->attrib.vertices[3*idx1.vertex_index + 2],
+            1.0f
+        );
+
+        auto pA = model*pA_aux;
+
+        //------------------------ PONTO B ---------------------------------
+
+        tinyobj::index_t idx2 = ObjModel->shapes[indice].mesh.indices[3*triangle + 1];
+
+        indices.push_back(first_index + 3*triangle + 1);
+
+        glm::vec4 pB_aux = glm::vec4(
+            ObjModel->attrib.vertices[3*idx2.vertex_index + 0],
+            ObjModel->attrib.vertices[3*idx2.vertex_index + 1],
+            ObjModel->attrib.vertices[3*idx2.vertex_index + 2],
+            1.0f
+        );
+
+        auto pB = model*pB_aux;
+
+        //------------------------ PONTO C ---------------------------------
+
+        tinyobj::index_t idx3 = ObjModel->shapes[indice].mesh.indices[3*triangle + 2];
+
+        indices.push_back(first_index + 3*triangle + 2);
+
+        glm::vec4 pC_aux = glm::vec4(
+            ObjModel->attrib.vertices[3*idx3.vertex_index + 0],
+            ObjModel->attrib.vertices[3*idx3.vertex_index + 1],
+            ObjModel->attrib.vertices[3*idx3.vertex_index + 2],
+            1.0f
+        );
+
+        auto pC = model*pC_aux;
+
+        //------------------------------------------------------------------
+
+        // busca-se por dois pontos para representar o antigo triangulo como um cubo,
+        // como as paredes são planas e alinhadas com os eixos X e Z não temos problemas
+        glm::vec4 min_XZ = glm::vec4(min3(pA.x, pB.x, pC.x), min3(pA.y, pB.y, pC.y), min3(pA.z, pB.z, pC.z), 1.0f);
+        glm::vec4 max_XZ = glm::vec4(max3(pA.x, pB.x, pC.x), max3(pA.y, pB.y, pC.y), max3(pA.z, pB.z, pC.z), 1.0f);
+        glm::vec4 normal_XZ = crossproduct((pA - pB), (pC - pB));
+
+        float margem = 0.5f;
+        float margem_plano = 20.0f;
+
+        // Verifica se o vértice se encontra nos limites do plano 
+        // (usa-se uma margem pois os planos allinhados com os eixos X e Z podem ter min.x e max.x iguais, oque dificulta a igualdade visto que utilizamos float)
+        if(
+            player_center_point.x >= min_XZ.x - margem
+            && player_center_point.z >= min_XZ.z - margem
+            && player_center_point.x <= max_XZ.x + margem
+            && player_center_point.z <= max_XZ.z + margem
+        ){
+            float pertence_plano = dotproduct((player_center_point - max_XZ), normal_XZ);
+
+            // Verifica-se se o ponto está em [0,1] na equação do plano
+            // (Gostaria de entender porque essa "margem_2" é necessária ;-;) 
+            // - Ricardo depois de 3h nesse problema
+            if(pertence_plano >= 0.0f - margem_plano && pertence_plano <= 1.0f + margem_plano){
+                movement_restricted = true;
+                movement_normal = glm::vec4(normal_XZ.x, 0.0f, normal_XZ.z, 0.0f);
+
+                if(dotproduct(view_aux, movement_normal) > 0){
+                    movement_normal = -movement_normal;
+                }
+            }
+        }
+    }
+}
+
+void colision_player_sphere_points(glm::mat4 model, char* object, float radius){
+        // Tamanho do cubo do jogador
+    float range_cubo = 0.5f;
+
+    // Centro do Jogador
+    glm::vec4 player_center_point = glm::vec4(g_TorsoPositionX, g_TorsoPositionY + 1.0f, g_TorsoPositionZ, 1.0f);
+
+    // Procura e calcula coordenadas mínima e máxima do modelo (aplicando matriz de transformação)
+    glm::vec3 bbox_min = g_VirtualScene[object].bbox_min;
+    glm::vec3 bbox_max = g_VirtualScene[object].bbox_max;
+
+    glm::vec4 coords_min =  glm::vec4(bbox_min.x, bbox_min.y, bbox_min.z, 1.0f);
+    glm::vec4 coords_max =  glm::vec4(bbox_max.x, bbox_max.y, bbox_max.z, 1.0f);
+
+    auto coords_min_T = model * coords_min;
+    auto coords_max_T = model * coords_max;
+
+    // Encontra o centro do modelo
+    glm::vec4 sphere_center = glm::vec4(
+        coords_min_T.x + ((coords_max_T.x - coords_min_T.x) / 2),
+        coords_min_T.y + ((coords_max_T.y - coords_min_T.y) / 2),
+        coords_min_T.z + ((coords_max_T.z - coords_min_T.z) / 2),
+        1.0f
+    );
+
+    // Verifica se o centro do player colide com uma esfera
+    if(norm(player_center_point - sphere_center) <= radius){
+        movement_restricted = true;
+        movement_normal = (player_center_point - sphere_center);
+        movement_normal = glm::vec4(movement_normal.x, 0.0f, movement_normal.z, 0.0f);
+    }
+}
+
+void colision_player_box_points(glm::mat4 model, char* object){
+
+    // Centro do Jogador
+    glm::vec4 player_center_point = glm::vec4(g_TorsoPositionX, g_TorsoPositionY + 1.0f, g_TorsoPositionZ, 1.0f);
+
+    // Procura e calcula coordenadas mínima e máxima do modelo (aplicando matriz de transformação)
+    glm::vec3 bbox_min = g_VirtualScene[object].bbox_min;
+    glm::vec3 bbox_max = g_VirtualScene[object].bbox_max;
+
+    glm::vec4 coords_min =  glm::vec4(bbox_min.x - 10, bbox_min.y - 10, bbox_min.z - 10, 1.0f);
+    glm::vec4 coords_max =  glm::vec4(bbox_max.x + 10, bbox_max.y + 10, bbox_max.z + 10, 1.0f);
+
+    auto coords_min_T = model * (coords_min);
+    auto coords_max_T = model * coords_max;
+
+    glm::vec4 box_center = glm::vec4(
+        coords_min_T.x + ((coords_max_T.x - coords_min_T.x) / 2),
+        coords_min_T.y + ((coords_max_T.y - coords_min_T.y) / 2),
+        coords_min_T.z + ((coords_max_T.z - coords_min_T.z) / 2),
+        1.0f
+    );
+
+    // Verifica se o player entra nos limites do cubo
+    if(
+           player_center_point.x >= coords_min_T.x
+        && player_center_point.y >= coords_min_T.y
+        && player_center_point.z >= coords_min_T.z
+
+        && player_center_point.x <= coords_max_T.x
+        && player_center_point.y <= coords_max_T.y
+        && player_center_point.z <= coords_max_T.z
+    ){
+        printf("min ---> x:%f // y: %f // z:%f // w: %f \n", g_TorsoPositionX, g_TorsoPositionY + 1.0f, g_TorsoPositionZ, 1.0f);
+        printf("min ---> x:%f // y: %f // z:%f // w: %f \n", coords_min_T.x, coords_min_T.y, coords_min_T.z, coords_min_T.w);
+        printf("max ---> x:%f // y: %f // z:%f // w: %f \n\n", coords_max_T.x, coords_max_T.y, coords_max_T.z, coords_max_T.w);
+        movement_restricted = true;
+        movement_normal = (player_center_point - box_center);
+        movement_normal = glm::vec4(movement_normal.x, 0.0f, movement_normal.z, 0.0f);
+    }
+}
+
+bool interact_radius(glm::mat4 model, char* object, float radius_expand){
+    bool colision = false;
+
+     // Centro do Jogador
+    glm::vec4 player_center_point = glm::vec4(g_TorsoPositionX, g_TorsoPositionY + 1.0f, g_TorsoPositionZ, 1.0f);
+
+    // Procura e calcula coordenadas mínima e máxima do modelo (aplicando matriz de transformação)
+    glm::vec3 bbox_min = g_VirtualScene[object].bbox_min;
+    glm::vec3 bbox_max = g_VirtualScene[object].bbox_max;
+
+    glm::vec4 coords_min =  glm::vec4(bbox_min.x - 10, bbox_min.y - 10, bbox_min.z - 10, 1.0f);
+    glm::vec4 coords_max =  glm::vec4(bbox_max.x + 10, bbox_max.y + 10, bbox_max.z + 10, 1.0f);
+
+    auto coords_min_T = model * (coords_min);
+    auto coords_max_T = model * coords_max;
+
+    // Verifica se o player entra nos limites do cubo
+    if(
+           player_center_point.x >= coords_min_T.x - radius_expand
+        && player_center_point.y >= coords_min_T.y - radius_expand
+        && player_center_point.z >= coords_min_T.z - radius_expand
+
+        && player_center_point.x <= coords_max_T.x + radius_expand
+        && player_center_point.y <= coords_max_T.y + radius_expand
+        && player_center_point.z <= coords_max_T.z + radius_expand
+    ){
+        colision = true;
+    }
+    return colision;
+}
+
+// Escrevemos na tela o número de quadros renderizados por segundo (frames per
+// second).
+void TextRendering_ShowChatCharacters(GLFWwindow* window, char* mensagem, float scale)
+{
+
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    TextRendering_PrintString(window, mensagem,  - (strlen(mensagem)*charwidth*scale) / 2 , 0.0f, scale);
+}
+
+
+float min3(float n1, float n2, float n3){
+    if(n1 < n2){
+        if(n1 < n3){
+            return n1;
+        }else{
+            return n3;
+        }
+    }else{
+        if(n2 < n3){
+            return n2;
+        }else{
+            return n3;
+        }
+    }
+}
+
+float max3(float n1, float n2, float n3){
+    if(n1 > n2){
+        if(n1 > n3){
+            return n1;
+        }else{
+            return n3;
+        }
+    }else{
+        if(n2 > n3){
+            return n2;
+        }else{
+            return n3;
+        }
+    }
 }
 
 
