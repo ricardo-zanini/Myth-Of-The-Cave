@@ -309,6 +309,9 @@ glm::vec4 camera_position_c;
 glm::vec4 camera_lookat_l;
 glm::vec4 camera_view_vector;
 glm::vec4 camera_up_vector;
+glm::vec4 w;
+glm::vec4 u;
+bool free_camera = false;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
@@ -526,32 +529,52 @@ int main(int argc, char* argv[])
         // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
         // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
         // e ScrollCallback().
-        float r = g_CameraDistance;
-        float y = r*sin(g_CameraPhi);
-        float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
-        float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
+        float r;
+        float x;
+        float y;
+        float z;
 
         // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
         // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        if(g_InitialScreen)
-        {
-            camera_position_c  = glm::vec4(-14.0f + 9.0f*cos(g_CameraPhi)*sin(g_CameraTheta),
-                                           1.0f + y,
-                                           15.5f + z,
-                                           1.0f);
-            camera_lookat_l    = glm::vec4(-14.0f,1.0f+2.7f,15.5f,1.0f);
 
-        }
-        else{
-            camera_position_c  = glm::vec4(x + g_TorsoPositionX, y + (g_TorsoPositionY + 4.0f), z + g_TorsoPositionZ, 1.0f); // Ponto "c", centro da câmera
-            camera_lookat_l    = glm::vec4(g_TorsoPositionX, g_TorsoPositionY + 2.7f, g_TorsoPositionZ, 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
-        }
-
-        camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
         camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 
-        // Computamos a matriz "View" utilizando os parâmetros da câmera para
-        // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
+        if(free_camera == false){
+
+            r = g_CameraDistance;
+            x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
+            y = r*sin(g_CameraPhi);
+            z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
+
+            if(g_InitialScreen)
+            {
+                camera_position_c  = glm::vec4(-14.0f + 9.0f*cos(g_CameraPhi)*sin(g_CameraTheta),
+                                            1.0f + y,
+                                            15.5f + z,
+                                            1.0f);
+                camera_lookat_l    = glm::vec4(-14.0f,1.0f+2.7f,15.5f,1.0f);
+            }
+            else{
+                camera_position_c  = glm::vec4(x + g_TorsoPositionX, y + (g_TorsoPositionY + 4.0f), z + g_TorsoPositionZ, 1.0f); // Ponto "c", centro da câmera
+                camera_lookat_l    = glm::vec4(g_TorsoPositionX, g_TorsoPositionY + 2.7f, g_TorsoPositionZ, 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+            }
+            camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
+        }else{
+            x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
+            y = r*sin(g_CameraPhi);
+            z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
+
+            camera_view_vector = glm::vec4(x, y, z, 0.0f);
+            camera_view_vector = -camera_view_vector;
+
+            w = -camera_view_vector;
+            u = crossproduct(camera_up_vector,w);
+
+            // Normalizamos os vetores u e w
+            w = w / norm(w);
+            u = u / norm(u);
+        }
+
         glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
 
         // Agora computamos a matriz de Projeção.
@@ -1483,7 +1506,11 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         float dy = ypos - g_LastCursorPosY;
 
         // Atualizamos parâmetros da câmera com os deslocamentos
-        //g_CameraTheta -= 0.01f*dx;
+        if(free_camera == true){
+            float dx = xpos - g_LastCursorPosX;
+            g_CameraTheta -= 0.01f*dx;
+        }
+
         g_CameraPhi   += 0.01f*dy;
 
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
@@ -1622,6 +1649,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
                 g_TorsoPositionY = 0.0f;
                 g_TorsoPositionZ = 25.0f;
             }
+        }
+        // Se o usuário quiser usar a câmera livre
+        if(key == GLFW_KEY_C && action == GLFW_PRESS){
+            free_camera = free_camera == true ? false : (g_OutCave == true ? true : false);
         }
 
     }
@@ -2247,101 +2278,113 @@ void MovePlayer(){
     float angle_45 = M_PI / 4;
     float repele_player = 0.05;
 
-    if(g_AngleX_leg > angle_45){
-        movement_AngleX_leg = true;
-    }
-    if(g_AngleX_leg < -angle_45){
-        movement_AngleX_leg = false;
-    }
-    if(g_WKeyPressed == true || g_SKeyPressed == true){
-        g_AngleX_leg = g_AngleX_leg + (movement_AngleX_leg ? -speed * delta_t : speed * delta_t);
-    }
-
-    // Calculo o angulo entre um vetor saindo do personagem e apontando para X e o vetor da câmera
-    glm::vec4 plano_X   = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
-    glm::vec4 plano_Z   = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
-    glm::vec4 view_aux  = glm::vec4(camera_view_vector.x, 0.0f, camera_view_vector.z, 0.0f);
-
-    float angulo_X;
-    float angulo_Z;
-
-    if(movement_restricted == false){
-        angulo_X = dotproduct(plano_X, view_aux) / (norm(plano_X) * norm(view_aux));
-        angulo_Z = dotproduct(plano_Z, view_aux) / (norm(plano_Z) * norm(view_aux));
-    }else{
-        angulo_X = dotproduct(plano_X, movement_normal) / (norm(plano_X) * norm(movement_normal));
-        angulo_Z = dotproduct(plano_Z, movement_normal) / (norm(plano_Z) * norm(movement_normal));
-    }
-
-    // Erro: função acos(x) retorna NaN (Not a Number) para -1 > x or x > 1
-    if(angulo_X < -1.0f)
-    {
-        angulo_X = acos(-1.0f);
-    }
-    else if(angulo_X > 1.0f)
-    {
-        angulo_X = acos(1.0f);
-    }
-    else{
-        angulo_X = acos(angulo_X);
-    }
-
-    if(angulo_Z < -1.0f)
-    {
-        angulo_Z = acos(-1.0f);
-    }
-    else if(angulo_Z > 1.0f)
-    {
-        angulo_Z = acos(1.0f);
-    }
-    else{
-        angulo_Z = acos(angulo_Z);
-    }
-
-    if(movement_restricted == false){
-        g_AngleY_torso = angulo_X;
-    }
-
-    //------------------------------------------------------
-
-    int movement_signal = 1.0;
-    if(g_WKeyPressed == true){
-        if(movement_restricted == true){
-            movement_restricted = false;
-            movement_signal = 1.0f;
-        }else{
-            movement_signal = 1.0f;
+    if(free_camera == false){
+        if(g_AngleX_leg > angle_45){
+            movement_AngleX_leg = true;
+        }
+        if(g_AngleX_leg < -angle_45){
+            movement_AngleX_leg = false;
+        }
+        if(g_WKeyPressed == true || g_SKeyPressed == true){
+            g_AngleX_leg = g_AngleX_leg + (movement_AngleX_leg ? -speed * delta_t : speed * delta_t);
         }
 
-        g_TorsoPositionZ = g_TorsoPositionZ + cos(angulo_Z) * movement_signal * speed * delta_t;
-        g_TorsoPositionX = g_TorsoPositionX + cos(angulo_X) * movement_signal * speed * delta_t;
-    }
-    // else if(g_SKeyPressed == true){
-    //     if(movement_restricted == true){
-    //         movement_restricted = false;
+        // Calculo o angulo entre um vetor saindo do personagem e apontando para X e o vetor da câmera
+        glm::vec4 plano_X   = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+        glm::vec4 plano_Z   = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+        glm::vec4 view_aux  = glm::vec4(camera_view_vector.x, 0.0f, camera_view_vector.z, 0.0f);
 
-    //             movement_signal = -1.0f;
+        float angulo_X;
+        float angulo_Z;
 
-    //     }else{
-    //         movement_signal = -1.0f;
-    //     }
+        if(movement_restricted == false){
+            angulo_X = dotproduct(plano_X, view_aux) / (norm(plano_X) * norm(view_aux));
+            angulo_Z = dotproduct(plano_Z, view_aux) / (norm(plano_Z) * norm(view_aux));
+        }else{
+            angulo_X = dotproduct(plano_X, movement_normal) / (norm(plano_X) * norm(movement_normal));
+            angulo_Z = dotproduct(plano_Z, movement_normal) / (norm(plano_Z) * norm(movement_normal));
+        }
 
-    //     g_TorsoPositionZ = g_TorsoPositionZ + cos(angulo_Z) * movement_signal * speed * delta_t;
-    //     g_TorsoPositionX = g_TorsoPositionX + cos(angulo_X) * movement_signal * speed * delta_t;
-    // }
-    if(g_AKeyPressed == true){
-        g_CameraTheta = g_CameraTheta + speed * delta_t;
-    }
-    if(g_DKeyPressed == true){
-        g_CameraTheta = g_CameraTheta - speed * delta_t;
-    }
-    if(g_COMMAKeyPressed == true)
-    {
-        g_TorsoPositionY -= speed*delta_t;
-    }
-    if(g_PERIODKeyPressed == true)
-    {
-        g_TorsoPositionY += speed*delta_t;
+        // Erro: função acos(x) retorna NaN (Not a Number) para -1 > x or x > 1
+        if(angulo_X < -1.0f)
+        {
+            angulo_X = acos(-1.0f);
+        }
+        else if(angulo_X > 1.0f)
+        {
+            angulo_X = acos(1.0f);
+        }
+        else{
+            angulo_X = acos(angulo_X);
+        }
+
+        if(angulo_Z < -1.0f)
+        {
+            angulo_Z = acos(-1.0f);
+        }
+        else if(angulo_Z > 1.0f)
+        {
+            angulo_Z = acos(1.0f);
+        }
+        else{
+            angulo_Z = acos(angulo_Z);
+        }
+
+        if(movement_restricted == false){
+            g_AngleY_torso = angulo_X;
+        }
+
+        //------------------------------------------------------
+
+        int movement_signal = 1.0;
+        if(g_WKeyPressed == true){
+            if(movement_restricted == true){
+                movement_restricted = false;
+                movement_signal = 1.0f;
+            }else{
+                movement_signal = 1.0f;
+            }
+
+            g_TorsoPositionZ = g_TorsoPositionZ + cos(angulo_Z) * movement_signal * speed * delta_t;
+            g_TorsoPositionX = g_TorsoPositionX + cos(angulo_X) * movement_signal * speed * delta_t;
+        }
+        // else if(g_SKeyPressed == true){
+        //     if(movement_restricted == true){
+        //         movement_restricted = false;
+
+        //             movement_signal = -1.0f;
+
+        //     }else{
+        //         movement_signal = -1.0f;
+        //     }
+
+        //     g_TorsoPositionZ = g_TorsoPositionZ + cos(angulo_Z) * movement_signal * speed * delta_t;
+        //     g_TorsoPositionX = g_TorsoPositionX + cos(angulo_X) * movement_signal * speed * delta_t;
+        // }
+        if(g_AKeyPressed == true){
+            g_CameraTheta = g_CameraTheta + speed * delta_t;
+        }
+        if(g_DKeyPressed == true){
+            g_CameraTheta = g_CameraTheta - speed * delta_t;
+        }
+        if(g_COMMAKeyPressed == true)
+        {
+            g_TorsoPositionY -= speed*delta_t;
+        }
+        if(g_PERIODKeyPressed == true)
+        {
+            g_TorsoPositionY += speed*delta_t;
+        }
+    }else{
+        if(g_WKeyPressed == true){
+            camera_position_c = camera_position_c - w * speed * delta_t;
+        }if(g_AKeyPressed == true){
+            camera_position_c = camera_position_c - u * speed * delta_t;
+        }if(g_SKeyPressed == true){
+            camera_position_c = camera_position_c + w * speed * delta_t;
+        }if(g_DKeyPressed == true){
+            camera_position_c = camera_position_c + u * speed * delta_t;
+        }
     }
 }
 
