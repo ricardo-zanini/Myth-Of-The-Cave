@@ -432,7 +432,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/ladder/ladder_material_normal.png","normal"); // TextureNormalLadder
     LoadTextureImage("../../data/greek2/RGB_379bb9ffa60c48d994f2b3773c413794_Pericles_albedo.jpeg",""); // TextureImageGreek2
     LoadTextureImage("../../data/greek2/N_0eed01a070d14ef2ab5f584e06ce6ab1_Pericles_normal.jpeg","normal"); // TextureNormalGreek2
-    LoadTextureImage("../../data/grass/RGB_5f2957af13ae4804bc42e7bbc7b85eae_Gras_Col_low.jpg",""); // TextureImageGrass
+    LoadTextureImage("../../data/grass/RGB_5f2957af13ae4804bc42e7bbc7b85eae_Gras_Col_low.png","alpha"); // TextureImageGrass
     LoadTextureImage("../../data/grass/N_3f22c42826694c4faf6f322ec4a2c50b_Gras_Nor_2K_I.jpeg","normal"); // TextureNormalGrass
     LoadTextureImage("../../data/mountain/RGB_b2bf6ec020774c3e8b09917a167753a5_MountainAlbedo4096.jpg",""); // TextureImageMountain
     LoadTextureImage("../../data/mountain/N_4e24f5b6ede843009d3a281f6258ce2a_MountainNormal4096.jpeg","normal"); // TextureNormalMountain
@@ -707,7 +707,7 @@ int main(int argc, char* argv[])
         // Imprimimos na tela informação sobre o número de quadros renderizados
         // por segundo (frames per second).
         TextRendering_ShowFramesPerSecond(window);
-        
+
 
         // O framebuffer onde OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -777,6 +777,10 @@ void LoadTextureImage(const char* filename, const char* type)
     if(type == "normal")
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    }
+    else if(type == "alpha")
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     }
     else{
         glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -2328,7 +2332,7 @@ void MovePlayer(){
         }else{
             movement_signal = 1.0f;
         }
-        
+
         g_TorsoPositionZ = g_TorsoPositionZ + cos(angulo_Z) * movement_signal * speed * delta_t;
         g_TorsoPositionX = g_TorsoPositionX + cos(angulo_X) * movement_signal * speed * delta_t;
     }
@@ -2917,7 +2921,7 @@ void colision_player_plane_points(glm::mat4 model, int indice, ObjModel* ObjMode
         float margem = 0.5f;
         float margem_plano = 20.0f;
 
-        // Verifica se o vértice se encontra nos limites do plano 
+        // Verifica se o vértice se encontra nos limites do plano
         // (usa-se uma margem pois os planos allinhados com os eixos X e Z podem ter min.x e max.x iguais, oque dificulta a igualdade visto que utilizamos float)
         if(
             player_center_point.x >= min_XZ.x - margem
@@ -2928,7 +2932,7 @@ void colision_player_plane_points(glm::mat4 model, int indice, ObjModel* ObjMode
             float pertence_plano = dotproduct((player_center_point - max_XZ), normal_XZ);
 
             // Verifica-se se o ponto está em [0,1] na equação do plano
-            // (Gostaria de entender porque essa "margem_2" é necessária ;-;) 
+            // (Gostaria de entender porque essa "margem_2" é necessária ;-;)
             // - Ricardo depois de 3h nesse problema
             if(pertence_plano >= 0.0f - margem_plano && pertence_plano <= 1.0f + margem_plano){
                 movement_restricted = true;
