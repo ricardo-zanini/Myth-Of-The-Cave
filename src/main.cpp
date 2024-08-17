@@ -154,7 +154,7 @@ void AddGreek2(glm::mat4 model, GLFWwindow* window);
 bool g_Greek2Collision = false;
 void AddCaveEntrance(glm::mat4 model);
 void AddMountain(glm::mat4 model);
-void AddRabbit(float translate_x, float translate_y, float translate_z, float scale, float speed_rabbit);
+void AddRabbit(glm::mat4 model);
 void AddBear(glm::mat4 model);
 
 
@@ -299,6 +299,8 @@ bool g_InitialScreen_FirstTime = true;
 bool movement_restricted = false;
 
 float movement_rabbit_part = 0.0f; // Movimento do coelho em uma curva de bezier indo de 0 a 1
+float movement_bear_part = 0.0f; // Movimento do urso em uma curva de bezier indo de 0 a 1
+float movement_player_part = 0.0f; // Movimento do player em uma curva de bezier indo de 0 a 1
 
 glm::vec4 movement_normal = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -614,13 +616,59 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
 
+            //----------------------------- DECLARACOES ---------------------------------------
+
+            float translate_x;
+            float translate_y;
+            float translate_z;
+            float scale;
+            float speed_models;
+
+            glm::vec4 p1;
+            glm::vec4 p2;
+            glm::vec4 p3;
+
+            glm::vec4 ponto_atual;
+
+            glm::mat4 model;
+
+
         //----------------------------- JOGADOR ------------------------------------------
 
-        AddPlayer(Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ)
-                  * Matrix_Rotate_Y(free_camera == true ? (M_PI/2 + g_AngleY_torso) : (camera_view_vector.z <= 0 ? M_PI/2 + g_AngleY_torso : M_PI/2 - g_AngleY_torso))
-                  * Matrix_Rotate_X(-M_PI_2)
-                  * Matrix_Rotate_Z(-M_PI_2)
-                  * Matrix_Scale(0.02f,0.02f,0.02f));
+        if(g_OutCave == true && movement_bear_part >= 1.0f){
+            speed_models = 0.2f;
+
+            // Declaração dos pontos que definirão a curva criada
+            p1 = glm::vec4(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ, 1.0f);
+            p2 = glm::vec4(g_TorsoPositionX + 0.0f, g_TorsoPositionY + 90.0f, g_TorsoPositionZ - 90.0f, 1.0f);
+            p3 = glm::vec4(g_TorsoPositionX - 1.0f, g_TorsoPositionY + 100.0f, g_TorsoPositionZ - 100.0f, 1.0f);
+
+            // A curva vai de um intervalo [0,1]
+            if(movement_bear_part >= 1.0f && movement_player_part >= 0 && movement_player_part <= 1){
+                movement_player_part = movement_player_part + delta_t * speed_models;
+                ponto_atual = bezier_curve_two_degree(p1, p2, p3, movement_player_part);
+
+            // Se a curva acabou apenas deixar o coelho na posicao final
+            }else if(movement_bear_part < 1.0f){
+                ponto_atual = p1;
+            }else if(movement_bear_part >= 1.0f && movement_player_part >= 1.0f){
+                ponto_atual = p3;
+            }
+
+            // Aplicação das transformacoes geométricas de acordo com o ponto retornado da funcao de bezier
+            model = Matrix_Translate(ponto_atual.x, ponto_atual.y, ponto_atual.z);
+        }else{
+            model = Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ);
+        }
+
+        model = model * Matrix_Rotate_Y(free_camera == true ? (M_PI/2 + g_AngleY_torso) : (camera_view_vector.z <= 0 ? M_PI/2 + g_AngleY_torso : M_PI/2 - g_AngleY_torso))
+                      * Matrix_Rotate_X(-M_PI_2)
+                      * Matrix_Rotate_Z(-M_PI_2)
+                      * Matrix_Scale(0.02f,0.02f,0.02f);
+
+        if(movement_player_part < 1.0f){
+            AddPlayer(model);
+        }
 
         MovePlayer();
 
@@ -677,14 +725,67 @@ int main(int argc, char* argv[])
                             * Matrix_Scale(10.0f,10.0f,10.0f)
                                 * Matrix_Rotate_Y(M_PI + M_PI/4));
 
-            //----------------------------- COELHO ------------------------------------------
+            //------------------------------- COELHO ------------------------------------------
 
-            AddRabbit(-58.0f, 0.75f, 395.0f, 0.5f, 0.2f);
+            translate_x = -58.0f;
+            translate_y = 0.75f;
+            translate_z = 395.0f;
+            scale = 0.5f;
+            speed_models = 0.1f;
+
+            // Declaração dos pontos que definirão a curva criada
+            p1 = glm::vec4(translate_x, translate_y, translate_z, 1.0f);
+            p2 = glm::vec4(translate_x + 10.0f, translate_y, translate_z + 10.0f, 1.0f);
+            p3 = glm::vec4(out_caveX, out_caveY, out_caveZ - 2.0f, 1.0f);
+
+            // A curva vai de um intervalo [0,1]
+            if(movement_rabbit_part >= 0 && movement_rabbit_part <= 1){
+                movement_rabbit_part = movement_rabbit_part + delta_t * speed_models;
+                ponto_atual = bezier_curve_two_degree(p1, p2, p3, movement_rabbit_part);
+
+            // Se a curva acabou apenas deixar o coelho na posicao final
+            }else{
+                ponto_atual = p3;
+            }
+
+            // Aplicação das transformacoes geométricas de acordo com o ponto retornado da funcao de bezier
+            model = Matrix_Translate(ponto_atual.x, ponto_atual.y, ponto_atual.z)
+                            * Matrix_Scale(scale, scale, scale)
+                            * Matrix_Rotate_Y(M_PI/2);
+            
+            AddRabbit(model);
 
             //----------------------------- URSO ------------------------------------------
 
-            AddBear(Matrix_Translate(13.0f,1.75f,382.0f)
-                        * Matrix_Scale(2.0f,2.0f,2.0f));
+            translate_x = -58.0f;
+            translate_y = 0.75f;
+            translate_z = 470.0f;
+            scale = 2.0f;
+            speed_models = 0.2f;
+
+            // Declaração dos pontos que definirão a curva criada
+            p1 = glm::vec4(translate_x, translate_y, translate_z, 1.0f);
+            p2 = glm::vec4(translate_x - 2.0f, translate_y + 0.5f, translate_z + 25.0f, 1.0f);
+            p3 = glm::vec4(translate_x - 3.0f, translate_y, translate_z - 55.0f, 1.0f);
+
+            // A curva vai de um intervalo [0,1]
+            if(movement_rabbit_part >= 1.0f && movement_bear_part >= 0 && movement_bear_part <= 1){
+                movement_bear_part = movement_bear_part + delta_t * speed_models;
+                ponto_atual = bezier_curve_two_degree(p1, p2, p3, movement_bear_part);
+
+            // Se a curva acabou apenas deixar o coelho na posicao final
+            }else if(movement_rabbit_part < 1.0f){
+                ponto_atual = p1;
+            }else if(movement_rabbit_part >= 1.0f && movement_bear_part >= 1.0f){
+                ponto_atual = p3;
+            }
+
+            // Aplicação das transformacoes geométricas de acordo com o ponto retornado da funcao de bezier
+            model = Matrix_Translate(ponto_atual.x, ponto_atual.y, ponto_atual.z)
+                            * Matrix_Scale(scale, scale, scale)
+                            * Matrix_Rotate_Y(M_PI);
+            
+            AddBear(model);
 
             //----------------------------- MONTANHAS ------------------------------------------
 
@@ -1675,32 +1776,23 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         // Se o usuário apertar space ele troca o mapa.
         if (key == GLFW_KEY_SPACE  && g_LadderCollision && action == GLFW_PRESS)
         {
-            g_OutCave = !g_OutCave;
+            g_OutCave = true;
 
             free_camera = true;
             g_LadderCollision = false;
 
-            if(g_OutCave)
-            {
-                g_CameraTheta = M_PI + M_PI/4 + M_PI/8;
-                g_CameraPhi = 0.0f;
-                g_TorsoPositionX = out_caveX;
-                g_TorsoPositionY = out_caveY;
-                g_TorsoPositionZ = out_caveZ;
+            g_CameraTheta = M_PI + M_PI/4 + M_PI/8;
+            g_CameraPhi = 0.0f;
+            g_TorsoPositionX = out_caveX;
+            g_TorsoPositionY = out_caveY;
+            g_TorsoPositionZ = out_caveZ;
 
-                camera_position_c  = glm::vec4(g_TorsoPositionX - 8.0f, g_TorsoPositionY + 4.0f, g_TorsoPositionZ - 8.0f, 1.0f);
-            }
-            else{
-                g_CameraTheta = M_PI_2;
-                g_CameraPhi = 0.0f;
-                g_TorsoPositionX = 5.0f;
-                g_TorsoPositionY = 0.0f;
-                g_TorsoPositionZ = 25.0f;
-            }
+            camera_position_c  = glm::vec4(g_TorsoPositionX - 8.0f, g_TorsoPositionY + 4.0f, g_TorsoPositionZ - 8.0f, 1.0f);
+
         }
         // Se o usuário quiser usar a câmera livre
         if(key == GLFW_KEY_C && action == GLFW_PRESS){
-            free_camera = free_camera == true ? false : (g_OutCave == true ? true : false);
+            //free_camera = free_camera == true ? false : (g_OutCave == true ? true : false);
         }
 
         /*// Se o usuário apertar space perto da escada ele vai para fora da caverna.
@@ -1838,8 +1930,8 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
 
     if ( ellapsed_seconds > 1.0f )
     {
-        numchars = snprintf(buffer, 20, "%.2f fps", ellapsed_frames / ellapsed_seconds);
-        //numchars = snprintf(buffer, 20, "%f,%f", g_TorsoPositionX, g_TorsoPositionZ);
+        //numchars = snprintf(buffer, 20, "%.2f fps", ellapsed_frames / ellapsed_seconds);
+        numchars = snprintf(buffer, 20, "%f,%f", g_TorsoPositionX, g_TorsoPositionZ);
 
         old_seconds = seconds;
         ellapsed_frames = 0;
@@ -2948,29 +3040,7 @@ void AddMountain(glm::mat4 model){
 
 }
 
-void AddRabbit(float translate_x, float translate_y, float translate_z, float scale, float speed_rabbit){
-
-    // Declaração dos pontos que definirão a curva criada
-    glm::vec4 p1 = glm::vec4(translate_x, translate_y, translate_z, 1.0f);
-    glm::vec4 p2 = glm::vec4(translate_x + 10.0f, translate_y, translate_z + 10.0f, 1.0f);
-    glm::vec4 p3 = glm::vec4(out_caveX, out_caveY, out_caveZ - 2.0f, 1.0f);
-
-    glm::vec4 ponto_atual;
-
-    // A curva vai de um intervalo [0,1]
-    if(movement_rabbit_part >= 0 && movement_rabbit_part <= 1){
-        movement_rabbit_part = movement_rabbit_part + delta_t * speed_rabbit;
-        ponto_atual = bezier_curve_two_degree(p1, p2, p3, movement_rabbit_part);
-
-    // Se a curva acabou apenas deixar o coelho na posicao final
-    }else{
-        ponto_atual = p3;
-    }
-
-    // Aplicação das transformacoes geométricas de acordo com o ponto retornado da funcao de bezier
-    glm::mat4 model = Matrix_Translate(ponto_atual.x, ponto_atual.y, ponto_atual.z)
-                    * Matrix_Scale(scale, scale, scale);
-
+void AddRabbit(glm::mat4 model){
     // Desenhamos a grama
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, RABBIT);
@@ -2978,7 +3048,6 @@ void AddRabbit(float translate_x, float translate_y, float translate_z, float sc
 }
 
 void AddBear(glm::mat4 model){
-
     // Desenhamos a grama
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, BEAR);
