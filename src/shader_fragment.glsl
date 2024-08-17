@@ -40,14 +40,11 @@ uniform mat4 projection;
 #define PRISIONER_CHAIN 13
 #define LADDER 14
 #define GREEK2 15
-#define GRASS 16
-#define MOUNTAIN 17
-#define MOUNTAIN2K 18
-#define MOUNTAIN4K 19
-#define CAVE_ENTRANCE1 20
-#define CAVE_ENTRANCE2 21
-#define RABBIT 22
-#define BEAR 23
+#define MOUNTAIN 16
+#define CAVE_ENTRANCE1 17
+#define CAVE_ENTRANCE2 18
+#define RABBIT 19
+#define BEAR 20
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -70,14 +67,8 @@ uniform sampler2D TextureImagePrisionerRock;
 uniform sampler2D TextureImagePrisionerChain;
 uniform sampler2D TextureImageLadder;
 uniform sampler2D TextureImageGreek2;
-uniform sampler2D TextureImageGrass;
-uniform sampler2D TextureNormalGrass;
 uniform sampler2D TextureImageMountain;
 uniform sampler2D TextureNormalMountain;
-uniform sampler2D TextureImageMountain2K;
-uniform sampler2D TextureNormalMountain2K;
-uniform sampler2D TextureImageMountain4K;
-uniform sampler2D TextureNormalMountain4K;
 uniform sampler2D TextureImageCaveEntrance1;
 uniform sampler2D TextureNormalCaveEntrance1;
 uniform sampler2D TextureImageCaveEntrance2;
@@ -267,39 +258,11 @@ void main()
         l_light_point = vec4(TBN * l_light_point);
         camera_position = vec4(TBN * camera_position);*/
     }
-    else if ( object_id == GRASS )
-    {
-        // Propriedades espectrais
-        /*Kd = vec3(0.8,0.8,0.8);
-        Ka = vec3(1.0, 1.0, 1.0);
-        n = vec4(normalize(texture(TextureNormalGrass, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
-        p = vec4(TBN * normal);
-        l_light_point = vec4(TBN * l_light_point);
-        camera_position = vec4(TBN * camera_position);*/
-    }
     else if ( object_id == MOUNTAIN )
     {
         // Propriedades espectrais
         Ka = vec3(1.0, 1.0, 1.0);
         n = vec4(normalize(texture(TextureNormalMountain, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
-        p = vec4(TBN * normal);
-        l_light_point = vec4(TBN * l_light_point);
-        camera_position = vec4(TBN * camera_position);
-    }
-    else if ( object_id == MOUNTAIN2K )
-    {
-        // Propriedades espectrais
-        Ka = vec3(1.0, 1.0, 1.0);
-        n = vec4(normalize(texture(TextureNormalMountain2K, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
-        p = vec4(TBN * normal);
-        l_light_point = vec4(TBN * l_light_point);
-        camera_position = vec4(TBN * camera_position);
-    }
-    else if ( object_id == MOUNTAIN4K )
-    {
-        // Propriedades espectrais
-        Ka = vec3(1.0, 1.0, 1.0);
-        n = vec4(normalize(texture(TextureNormalMountain4K, vec2(U,V)).rgb * 2.0f - 1.0f),0.0);
         p = vec4(TBN * normal);
         l_light_point = vec4(TBN * l_light_point);
         camera_position = vec4(TBN * camera_position);
@@ -385,10 +348,7 @@ void main()
     vec3 KdPrisionerChain = texture(TextureImagePrisionerChain, vec2(U,V)).rgb;
     vec3 KdLadder = texture(TextureImageLadder, vec2(U,V)).rgb;
     vec3 KdGreek2 = texture(TextureImageGreek2, vec2(U,V)).rgb;
-    vec3 KdGrass = texture(TextureImageGrass, vec2(U,V)).rgb;
     vec3 KdMountain = texture(TextureImageMountain, vec2(U,V)).rgb;
-    vec3 KdMountain2K = texture(TextureImageMountain2K, vec2(U,V)).rgb;
-    vec3 KdMountain4K = texture(TextureImageMountain4K, vec2(U,V)).rgb;
     vec3 KdCaveEntrance1 = texture(TextureImageCaveEntrance1, vec2(U,V)).rgb;
     vec3 KdCaveEntrance2 = texture(TextureImageCaveEntrance2, vec2(U,V)).rgb;
     vec3 KdRabbit = texture(TextureImageRabbit, vec2(U,V)).rgb;
@@ -476,21 +436,9 @@ void main()
     {
         color.rgb = KdGreek2 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
-    else if ( object_id == GRASS )
-    {
-        color.rgb = KdGrass * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
-    }
     else if ( object_id == MOUNTAIN )
     {
         color.rgb = KdMountain * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
-    }
-    else if ( object_id == MOUNTAIN2K )
-    {
-        color.rgb = KdMountain2K * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
-    }
-    else if ( object_id == MOUNTAIN4K )
-    {
-        color.rgb = KdMountain4K * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
     else if ( object_id == CAVE_ENTRANCE1 )
     {
