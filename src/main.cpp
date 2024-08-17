@@ -69,14 +69,11 @@
 #define PRISIONER_CHAIN 13
 #define LADDER 14
 #define GREEK2 15
-#define GRASS 16
-#define MOUNTAIN 17
-#define MOUNTAIN2K 18
-#define MOUNTAIN4K 19
-#define CAVE_ENTRANCE1 20
-#define CAVE_ENTRANCE2 21
-#define RABBIT 22
-#define BEAR 23
+#define MOUNTAIN 16
+#define CAVE_ENTRANCE1 17
+#define CAVE_ENTRANCE2 18
+#define RABBIT 19
+#define BEAR 20
 
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
@@ -156,8 +153,7 @@ void AddCampfire(glm::mat4 model);
 void AddGreek2(glm::mat4 model, GLFWwindow* window);
 bool g_Greek2Collision = false;
 void AddCaveEntrance(glm::mat4 model);
-void AddGrass(glm::mat4 model);
-void AddMountain(glm::mat4 model, char* texture);
+void AddMountain(glm::mat4 model);
 void AddRabbit(glm::mat4 model);
 void AddBear(glm::mat4 model);
 
@@ -300,9 +296,6 @@ glm::vec4 movement_normal = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 //Variável que indica se o jogador está fora da caverna ou não
 bool g_OutCave = false;
 
-//Indica a primeira posição da grama
-glm::vec3 g_GrassInit = glm::vec3(0.0f,0.0f,300.0f);
-
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = true;
 
@@ -334,8 +327,7 @@ ObjModel laddermodel("../../data/ladder/ladder.obj");
 ObjModel titlemodel("../../data/title/title.obj");
 ObjModel greek2model("../../data/greek2/greek2.obj");
 ObjModel caveEntrancemodel("../../data/cave_entrance/cave_entrance.obj");
-ObjModel grassmodel("../../data/grass/grass.obj");
-ObjModel mountainmodel("../../data/mountain/mountain50.obj");
+ObjModel mountainmodel("../../data/mountain/mountain.obj");
 ObjModel rabbitmodel("../../data/rabbit/rabbit.obj");
 ObjModel bearmodel("../../data/bear/bear.obj");
 
@@ -440,14 +432,8 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/prisioner/f2153fd7eeac4b6eb7d4a5a1a865ba7a_RGB_Chain_diffuse.tga.png",""); // TextureImagePrisionerChain
     LoadTextureImage("../../data/ladder/ladder_material_baseColor.png",""); // TextureImageLadder
     LoadTextureImage("../../data/greek2/RGB_379bb9ffa60c48d994f2b3773c413794_Pericles_albedo.jpeg",""); // TextureImageGreek2
-    LoadTextureImage("../../data/grass/grass1-albedo3.png","alpha"); // TextureImageGrass
-    LoadTextureImage("../../data/grass/grass1-normal1-dx.png","normal"); // TextureNormalGrass
     LoadTextureImage("../../data/mountain/RGB_b2bf6ec020774c3e8b09917a167753a5_MountainAlbedo4096.jpg",""); // TextureImageMountain
     LoadTextureImage("../../data/mountain/N_4e24f5b6ede843009d3a281f6258ce2a_MountainNormal4096.jpeg","normal"); // TextureNormalMountain
-    LoadTextureImage("../../data/mountain/2K Textures/RGB_b2bf6ec020774c3e8b09917a167753a5_MountainAlbedo4096.jpg",""); // TextureImageMountain2K
-    LoadTextureImage("../../data/mountain/2K Textures/N_4e24f5b6ede843009d3a281f6258ce2a_MountainNormal4096.jpeg","normal"); // TextureNormalMountain2K
-    LoadTextureImage("../../data/mountain/4K Textures/RGB_b2bf6ec020774c3e8b09917a167753a5_MountainAlbedo4096.jpg",""); // TextureImageMountain4K
-    LoadTextureImage("../../data/mountain/4K Textures/N_4e24f5b6ede843009d3a281f6258ce2a_MountainNormal4096.jpeg","normal"); // TextureNormalMountain4K
     LoadTextureImage("../../data/cave_entrance/cave_albedo.jpg",""); // TextureImageCaveEntrance1
     LoadTextureImage("../../data/cave_entrance/cave_normal.png","normal"); // TextureNormalCaveEntrance1
     LoadTextureImage("../../data/cave_entrance/aerial_rocks_04_diff_4k.jpg",""); // TextureImageCaveEntrance2
@@ -483,9 +469,6 @@ int main(int argc, char* argv[])
 
     ComputeNormals(&caveEntrancemodel);
     BuildTrianglesAndAddToVirtualScene(&caveEntrancemodel);
-
-    ComputeNormals(&grassmodel);
-    BuildTrianglesAndAddToVirtualScene(&grassmodel);
 
     ComputeNormals(&mountainmodel);
     BuildTrianglesAndAddToVirtualScene(&mountainmodel);
@@ -680,55 +663,43 @@ int main(int argc, char* argv[])
 
 
             // Adiciona montanha "┌"
-            AddMountain(Matrix_Translate(0.0f,6.0f,150.0f + g_GrassInit.z)
+            AddMountain(Matrix_Translate(0.0f,6.0f,150.0f + 300.0f)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
-                            * Matrix_Rotate_Y(M_PI),"4K");
+                            * Matrix_Rotate_Y(M_PI));
 
             // Adiciona montanha "┐"
-            AddMountain(Matrix_Translate(-119.0f,6.0f,150.0f + g_GrassInit.z)
+            AddMountain(Matrix_Translate(-119.0f,6.0f,150.0f + 300.0f)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
-                            * Matrix_Rotate_Y(M_PI),"4K");
+                            * Matrix_Rotate_Y(M_PI));
 
             /*// Adiciona montanha "a"
-            AddMountain(Matrix_Translate(-68.0f,6.0f,68.0f + 150.0f + g_GrassInit.z)
+            AddMountain(Matrix_Translate(-68.0f,6.0f,68.0f + 150.0f + 300.0f)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
-                            * Matrix_Rotate_Y(M_PI),"2K");*/
+                            * Matrix_Rotate_Y(M_PI));*/
 
             // Adiciona montanha "└"
-            AddMountain(Matrix_Translate(0.0f,6.0f,-136.0f + 150.0f + g_GrassInit.z)
+            AddMountain(Matrix_Translate(0.0f,6.0f,-136.0f + 150.0f + 300.0f)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
-                            * Matrix_Rotate_Y(-M_PI_2),"HD");
+                            * Matrix_Rotate_Y(-M_PI_2));
 
             /*// Adiciona montanha "c"
-            AddMountain(Matrix_Translate(68.0f,6.0f,-68.0f + 150.0f + g_GrassInit.z)
+            AddMountain(Matrix_Translate(68.0f,6.0f,-68.0f + 150.0f + 300.0f)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
-                            * Matrix_Rotate_Y(-M_PI_2),"HD");*/
+                            * Matrix_Rotate_Y(-M_PI_2));*/
 
             // Adiciona montanha "┘"
-            AddMountain(Matrix_Translate(-119.0f,6.0f,-119.0f + 150.0f + g_GrassInit.z)
+            AddMountain(Matrix_Translate(-119.0f,6.0f,-119.0f + 150.0f + 300.0f)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
-                            * Matrix_Rotate_Y(0.0f),"2K");
+                            * Matrix_Rotate_Y(0.0f));
 
             /*// Adiciona montanha "b"
-            AddMountain(Matrix_Translate(-68.0f,6.0f,-136.0f*1.5f + 150.0f + g_GrassInit.z)
-                        * Matrix_Scale(150.0f,150.0f,150.0f),"HD");
+            AddMountain(Matrix_Translate(-68.0f,6.0f,-136.0f*1.5f + 150.0f + 300.0f)
+                        * Matrix_Scale(150.0f,150.0f,150.0f));
 
             // Adiciona montanha "d"
-            AddMountain(Matrix_Translate(-136.0f * 1.5f,6.0f,-68.0f + 150.0f + g_GrassInit.z)
+            AddMountain(Matrix_Translate(-136.0f * 1.5f,6.0f,-68.0f + 150.0f + 300.0f)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
-                            * Matrix_Rotate_Y(M_PI),"HD");*/
-
-            //----------------------------- GRAMA ------------------------------------------
-
-            for(int i = 0; i < 8; i++)
-            {
-                for(int j = 0; j < 12; j++)
-                {
-                    AddGrass(Matrix_Translate(g_GrassInit.x - 29.0f * i,
-                                                g_GrassInit.y,
-                                                    g_GrassInit.z + 12.0f * j));
-                }
-            }
+                            * Matrix_Rotate_Y(M_PI));*/
 
         }
 
@@ -937,20 +908,14 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImagePrisionerChain"), 12);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageLadder"), 13);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageGreek2"), 14);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageGrass"), 15);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalGrass"), 16);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageMountain"), 17);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalMountain"), 18);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageMountain2K"), 19);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalMountain2K"), 20);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageMountain4K"), 21);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalMountain4K"), 22);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveEntrance1"), 23);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveEntrance1"), 24);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveEntrance2"), 25);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveEntrance2"), 26);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageRabbit"), 27);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageBear"), 28);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageMountain"), 15);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalMountain"), 16);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveEntrance1"), 17);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveEntrance1"), 18);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveEntrance2"), 19);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveEntrance2"),20);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageRabbit"), 21);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageBear"), 22);
     glUseProgram(0);
 }
 
@@ -1823,8 +1788,8 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
 
     if ( ellapsed_seconds > 1.0f )
     {
-        //numchars = snprintf(buffer, 20, "%.2f fps", ellapsed_frames / ellapsed_seconds);
-        numchars = snprintf(buffer, 20, "%f,%f", g_TorsoPositionX, g_TorsoPositionZ);
+        numchars = snprintf(buffer, 20, "%.2f fps", ellapsed_frames / ellapsed_seconds);
+        //numchars = snprintf(buffer, 20, "%f,%f", g_TorsoPositionX, g_TorsoPositionZ);
 
         old_seconds = seconds;
         ellapsed_frames = 0;
@@ -2893,53 +2858,27 @@ void AddCaveEntrance(glm::mat4 model){
 
 }
 
-void AddGrass(glm::mat4 model){
-
-    // Permite o desenho de objetos transparentes
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    // Desenhamos a grama
-    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-    glUniform1i(g_object_id_uniform, GRASS);
-    DrawVirtualObject("grass");
-}
-
-void AddMountain(glm::mat4 model, char* texture){
-
-    int typeMountain;
-
-    if(texture == "4K")
-    {
-        typeMountain = MOUNTAIN4K;
-    }
-    else if(texture == "2K")
-    {
-        typeMountain = MOUNTAIN2K;
-    }
-    else{
-        typeMountain = MOUNTAIN;
-    }
+void AddMountain(glm::mat4 model){
 
     // Desenhamos a montanha
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-    glUniform1i(g_object_id_uniform, typeMountain);
+    glUniform1i(g_object_id_uniform, MOUNTAIN);
     DrawVirtualObject("mountain_0");
 
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-    glUniform1i(g_object_id_uniform, typeMountain);
+    glUniform1i(g_object_id_uniform, MOUNTAIN);
     DrawVirtualObject("mountain_1");
 
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-    glUniform1i(g_object_id_uniform, typeMountain);
+    glUniform1i(g_object_id_uniform, MOUNTAIN);
     DrawVirtualObject("mountain_2");
 
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-    glUniform1i(g_object_id_uniform, typeMountain);
+    glUniform1i(g_object_id_uniform, MOUNTAIN);
     DrawVirtualObject("mountain_3");
 
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-    glUniform1i(g_object_id_uniform, typeMountain);
+    glUniform1i(g_object_id_uniform, MOUNTAIN);
     DrawVirtualObject("mountain_4");
 
 }
