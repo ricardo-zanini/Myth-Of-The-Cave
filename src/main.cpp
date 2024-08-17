@@ -430,7 +430,7 @@ int main(int argc, char* argv[])
 
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/campfire/Campfire_MAT_BaseColor_01.jpg",""); // TextureImageCampfire
-    LoadTextureImage("../../data/campfire/Campfire_fire_MAT_BaseColor_Alpha.png","alpha"); // TextureImageFire
+    LoadTextureImage("../../data/campfire/Campfire_fire_MAT_BaseColor_Alpha_white.png",""); // TextureImageFire
     LoadTextureImage("../../data/cave/RGB_e34762cfafeb488aa5ba2f697743a0bc_Rock_Kit_C.png",""); // TextureImageCaveWalls
     LoadTextureImage("../../data/cave/cave-floor-rock_albedo.png",""); // TextureImageCaveFloor
     LoadTextureImage("../../data/gruta/GRUTA_BASE_defaultMat_BaseColor.png",""); // TextureImageGruta
@@ -560,6 +560,10 @@ int main(int argc, char* argv[])
 
             if(g_InitialScreen)
             {
+
+                g_CameraPhi = 0.0f;
+                g_CameraTheta = M_PI_2;
+
                 camera_position_c  = glm::vec4(-14.0f + 9.0f*cos(g_CameraPhi)*sin(g_CameraTheta),
                                             1.0f + y,
                                             15.5f + z,
@@ -657,7 +661,8 @@ int main(int argc, char* argv[])
 
             //----------------------------- FOGUEIRA ------------------------------------------
 
-            AddCampfire(Matrix_Translate(-14.0f,0.0f,15.5f));
+            AddCampfire(Matrix_Translate(-14.0f,0.0f,15.5f)
+                            * Matrix_Rotate_Y(M_PI_2));
 
             //----------------------------- FÍSICA DAS PAREDES DA CAVERNA ------------------------------------------
 
@@ -834,7 +839,7 @@ void LoadTextureImage(const char* filename, const char* type)
     }
     else if(type == "alpha")
     {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA8, GL_UNSIGNED_BYTE, data);
     }
     else{
         glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -1671,7 +1676,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         if (key == GLFW_KEY_SPACE  && g_LadderCollision && action == GLFW_PRESS)
         {
             g_OutCave = !g_OutCave;
-            
+
             free_camera = true;
             g_LadderCollision = false;
 
@@ -2767,6 +2772,9 @@ void AddCampfire(glm::mat4 model){
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    model = model * Matrix_Translate(0.0f,-2.0f,0.0f)
+        * Matrix_Scale(2.0f,2.0f,2.0f);
+
     // Desenhamos 28 partes do fogo
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, FIRE);
@@ -2946,7 +2954,7 @@ void AddRabbit(float translate_x, float translate_y, float translate_z, float sc
     glm::vec4 p1 = glm::vec4(translate_x, translate_y, translate_z, 1.0f);
     glm::vec4 p2 = glm::vec4(translate_x + 10.0f, translate_y, translate_z + 10.0f, 1.0f);
     glm::vec4 p3 = glm::vec4(out_caveX, out_caveY, out_caveZ - 2.0f, 1.0f);
-    
+
     glm::vec4 ponto_atual;
 
     // A curva vai de um intervalo [0,1]
@@ -3185,7 +3193,7 @@ void TextRendering_ShowInitialScreenText(GLFWwindow* window, char* mensagem, flo
     float lineheight = TextRendering_LineHeight(window);
     float charwidth = TextRendering_CharWidth(window);
 
-    TextRendering_PrintString(window, mensagem,  - (strlen(mensagem)*charwidth*scale) / 2 , -0.1f, scale);
+    TextRendering_PrintString(window, mensagem,  - (strlen(mensagem)*charwidth*scale) / 2 , -0.025f, scale);
     //TextRendering_PrintString(window, "Perspective", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);
 }
 

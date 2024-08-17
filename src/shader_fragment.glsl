@@ -335,6 +335,7 @@ void main()
     // Obtemos a refletância difusa a partir da leitura da imagem da textura
     vec3 KdCampfire = texture(TextureImageCampfire, vec2(U,V)).rgb;
     vec3 KdFire = texture(TextureImageFire, vec2(U,V)).rgb;
+    float KdFireAlpha = texture(TextureImageFire, vec2(U,V)).a;
     vec3 KdCaveWalls = texture(TextureImageCaveWalls, vec2(U,V)).rgb;
     vec3 KdCaveFloor = texture(TextureImageCaveFloor, vec2(U,V)).rgb;
     vec3 KdGruta = texture(TextureImageGruta, vec2(U,V)).rgb;
@@ -377,6 +378,9 @@ void main()
     }
     else if ( object_id == FIRE )
     {
+        //Remove o fundo branco do fogo
+        if(KdFire.x >= 0.1f && KdFire.y >= 0.1f && KdFire.z >= 0.1f)
+            discard;
         color.rgb = KdFire * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
     else if ( object_id == CAVE )
