@@ -75,6 +75,8 @@
 #define MOUNTAIN4K 19
 #define CAVE_ENTRANCE1 20
 #define CAVE_ENTRANCE2 21
+#define RABBIT 22
+#define BEAR 23
 
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
@@ -145,7 +147,9 @@ void PopMatrix(glm::mat4& M);
 void AddPlayer(glm::mat4 model);
 void MovePlayer();
 void AddCave();
+void AddCavePhysics();
 void AddLadder(glm::mat4 model);
+bool g_LadderCollision = false;
 void AddTitle(glm::mat4 model);
 void AddPrisioner(glm::mat4 model, bool showBody);
 void AddCampfire(glm::mat4 model);
@@ -154,6 +158,9 @@ bool g_Greek2Collision = false;
 void AddCaveEntrance(glm::mat4 model);
 void AddGrass(glm::mat4 model);
 void AddMountain(glm::mat4 model, char* texture);
+void AddRabbit(float translate_x, float translate_y, float translate_z, float scale, float speed_rabbit);
+void AddBear(glm::mat4 model);
+
 
 void colision_player_plane_points(glm::mat4 model, int indice, ObjModel* ObjModel);
 void colision_player_sphere_points(glm::mat4 model, char* object, float radius);
@@ -164,7 +171,11 @@ bool interact_radius(glm::mat4 model, char* object, float radius_expand);
 float min3(float n1, float n2, float n3);
 float max3(float n1, float n2, float n3);
 
-void TextRendering_ShowChatCharacters(GLFWwindow* window, char* mensagem, float scale);
+void TextRendering_ShowInitialScreenText(GLFWwindow* window, char* mensagem, float scale);
+void TextRendering_ShowChatCharacters(GLFWwindow* window, char* mensagem, float scale, float position);
+
+glm::vec4 bezier_curve_two_degree(glm::vec4 p1, glm::vec4 p2, glm::vec4 p3, float t);
+
 
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
@@ -274,16 +285,24 @@ float g_TorsoPositionX = 5.0f;
 float g_TorsoPositionY = 0.0f;
 float g_TorsoPositionZ = 25.0f;
 
+float out_caveX = -60.0f;
+float out_caveY = 0.5f;
+float out_caveZ = 410.0f;
+
 float current_time;
 float delta_t;
 float fast_speed = 8.0f;
 float normal_speed = 5.0f;
 float speed = normal_speed;
+float spin_speed = 3.0f;
 float prev_time;
 
 //Variável que indica se o jogo está na tela inicial ou não
 bool g_InitialScreen = true;
+bool g_InitialScreen_FirstTime = true;
 bool movement_restricted = false;
+
+float movement_rabbit_part = 0.0f; // Movimento do coelho em uma curva de bezier indo de 0 a 1
 
 glm::vec4 movement_normal = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -326,6 +345,11 @@ ObjModel grutamodel("../../data/gruta/gruta.obj");
 ObjModel laddermodel("../../data/ladder/ladder.obj");
 ObjModel titlemodel("../../data/title/title.obj");
 ObjModel greek2model("../../data/greek2/greek2.obj");
+ObjModel caveEntrancemodel("../../data/cave_entrance/cave_entrance.obj");
+ObjModel grassmodel("../../data/grass/grass.obj");
+ObjModel mountainmodel("../../data/mountain/mountain50.obj");
+ObjModel rabbitmodel("../../data/rabbit/rabbit.obj");
+ObjModel bearmodel("../../data/bear/bear.obj");
 
 
 int main(int argc, char* argv[])
@@ -440,6 +464,8 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/cave_entrance/cave_normal.png","normal"); // TextureNormalCaveEntrance1
     LoadTextureImage("../../data/cave_entrance/aerial_rocks_04_diff_4k.jpg",""); // TextureImageCaveEntrance2
     LoadTextureImage("../../data/cave_entrance/aerial_rocks_04_nor_gl_4k.png","normal"); // TextureNormalCaveEntrance2
+    LoadTextureImage("../../data/rabbit/texture.jpg",""); // TextureImageRabbit
+    LoadTextureImage("../../data/bear/bear_co.jpg",""); // TextureImageBear
 
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
@@ -467,17 +493,20 @@ int main(int argc, char* argv[])
     ComputeNormals(&greek2model);
     BuildTrianglesAndAddToVirtualScene(&greek2model);
 
-    ObjModel caveEntrancemodel("../../data/cave_entrance/cave_entrance.obj");
     ComputeNormals(&caveEntrancemodel);
     BuildTrianglesAndAddToVirtualScene(&caveEntrancemodel);
 
-    ObjModel grassmodel("../../data/grass/grass.obj");
     ComputeNormals(&grassmodel);
     BuildTrianglesAndAddToVirtualScene(&grassmodel);
 
-    ObjModel mountainmodel("../../data/mountain/mountain.obj");
     ComputeNormals(&mountainmodel);
     BuildTrianglesAndAddToVirtualScene(&mountainmodel);
+
+    ComputeNormals(&rabbitmodel);
+    BuildTrianglesAndAddToVirtualScene(&rabbitmodel);
+
+    ComputeNormals(&bearmodel);
+    BuildTrianglesAndAddToVirtualScene(&bearmodel);
 
 
     if ( argc > 1 )
@@ -601,14 +630,14 @@ int main(int argc, char* argv[])
         //----------------------------- JOGADOR ------------------------------------------
 
         AddPlayer(Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ)
-                  * Matrix_Rotate_Y(camera_view_vector.z <= 0 ? M_PI/2 + g_AngleY_torso : M_PI/2 - g_AngleY_torso)
+                  * Matrix_Rotate_Y(free_camera == true ? (M_PI/2 + g_AngleY_torso) : (camera_view_vector.z <= 0 ? M_PI/2 + g_AngleY_torso : M_PI/2 - g_AngleY_torso))
                   * Matrix_Rotate_X(-M_PI_2)
                   * Matrix_Rotate_Z(-M_PI_2)
                   * Matrix_Scale(0.02f,0.02f,0.02f));
 
         MovePlayer();
 
-        if(!g_OutCave)
+        if(!g_OutCave || g_InitialScreen)
         {
             //----------------------------- CAVERNA ------------------------------------------
 
@@ -647,6 +676,10 @@ int main(int argc, char* argv[])
 
             AddCampfire(Matrix_Translate(-14.0f,0.0f,15.5f));
 
+            //----------------------------- FÍSICA DAS PAREDES DA CAVERNA ------------------------------------------
+
+            AddCavePhysics(); //model definida dentro da função
+
         }
         else{
 
@@ -655,6 +688,15 @@ int main(int argc, char* argv[])
             AddCaveEntrance(Matrix_Translate(-50.0f,4.0f,420.0f)
                             * Matrix_Scale(10.0f,10.0f,10.0f)
                                 * Matrix_Rotate_Y(M_PI + M_PI/4));
+
+            //----------------------------- COELHO ------------------------------------------
+
+            AddRabbit(-58.0f, 0.75f, 395.0f, 0.5f, 0.2f);
+
+            //----------------------------- URSO ------------------------------------------
+
+            AddBear(Matrix_Translate(13.0f,1.75f,382.0f)
+                        * Matrix_Scale(2.0f,2.0f,2.0f));
 
             //----------------------------- MONTANHAS ------------------------------------------
 
@@ -672,42 +714,42 @@ int main(int argc, char* argv[])
                             * Matrix_Rotate_Y(M_PI),"4K");
 
             // Adiciona montanha "┐"
-            AddMountain(Matrix_Translate(-136.0f,6.0f,150.0f + g_GrassInit.z)
+            AddMountain(Matrix_Translate(-119.0f,6.0f,150.0f + g_GrassInit.z)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
-                            * Matrix_Rotate_Y(M_PI),"2K");
+                            * Matrix_Rotate_Y(M_PI),"4K");
 
-            // Adiciona montanha "a"
+            /*// Adiciona montanha "a"
             AddMountain(Matrix_Translate(-68.0f,6.0f,68.0f + 150.0f + g_GrassInit.z)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
-                            * Matrix_Rotate_Y(M_PI),"2K");
+                            * Matrix_Rotate_Y(M_PI),"2K");*/
 
             // Adiciona montanha "└"
             AddMountain(Matrix_Translate(0.0f,6.0f,-136.0f + 150.0f + g_GrassInit.z)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
                             * Matrix_Rotate_Y(-M_PI_2),"HD");
 
-            // Adiciona montanha "c"
+            /*// Adiciona montanha "c"
             AddMountain(Matrix_Translate(68.0f,6.0f,-68.0f + 150.0f + g_GrassInit.z)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
-                            * Matrix_Rotate_Y(-M_PI_2),"HD");
+                            * Matrix_Rotate_Y(-M_PI_2),"HD");*/
 
             // Adiciona montanha "┘"
-            AddMountain(Matrix_Translate(-136.0f,6.0f,-136.0f + 150.0f + g_GrassInit.z)
+            AddMountain(Matrix_Translate(-119.0f,6.0f,-119.0f + 150.0f + g_GrassInit.z)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
-                            * Matrix_Rotate_Y(-M_PI_2),"HD");
+                            * Matrix_Rotate_Y(0.0f),"2K");
 
-            // Adiciona montanha "b"
+            /*// Adiciona montanha "b"
             AddMountain(Matrix_Translate(-68.0f,6.0f,-136.0f*1.5f + 150.0f + g_GrassInit.z)
                         * Matrix_Scale(150.0f,150.0f,150.0f),"HD");
 
             // Adiciona montanha "d"
             AddMountain(Matrix_Translate(-136.0f * 1.5f,6.0f,-68.0f + 150.0f + g_GrassInit.z)
                         * Matrix_Scale(150.0f,150.0f,150.0f)
-                            * Matrix_Rotate_Y(M_PI),"HD");
+                            * Matrix_Rotate_Y(M_PI),"HD");*/
 
             //----------------------------- GRAMA ------------------------------------------
 
-            for(int i = 0; i < 10; i++)
+            for(int i = 0; i < 8; i++)
             {
                 for(int j = 0; j < 12; j++)
                 {
@@ -719,13 +761,34 @@ int main(int argc, char* argv[])
 
         }
 
+        //----------------------------- TEXTOS ------------------------------------------
+
         // Imprimimos na tela informação sobre o número de quadros renderizados
         // por segundo (frames per second).
         TextRendering_ShowFramesPerSecond(window);
 
+        if(g_InitialScreen)
+        {
+            if(g_InitialScreen_FirstTime)
+            {
+                TextRendering_ShowInitialScreenText(window, "APERTE [ENTER] PARA COMECAR", 1.5f);
+            }
+            else{
+                TextRendering_ShowInitialScreenText(window, "APERTE [ENTER] PARA VOLTAR AO JOGO", 1.5f);
+            }
+        }
+        if(g_OutCave == true){
+            TextRendering_ShowChatCharacters(window, "Movimente a camera para vizualizar a cutscene", 1.5f, 0.8);
+        }
+
         if(g_Greek2Collision)
         {
-            TextRendering_ShowChatCharacters(window, "[E] Falar", 1.5f);
+            TextRendering_ShowChatCharacters(window, "[E] Falar", 1.5f, -0.8);
+        }
+
+        if(g_LadderCollision)
+        {
+            TextRendering_ShowChatCharacters(window, "[SPACE] Sair da Caverna", 1.5f, -0.8);
         }
 
 
@@ -918,6 +981,8 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveEntrance1"), 24);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveEntrance2"), 25);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveEntrance2"), 26);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageRabbit"), 27);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageBear"), 28);
     glUseProgram(0);
 }
 
@@ -1514,7 +1579,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         g_CameraPhi   += 0.01f*dy;
 
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
-        float phimax = 3.141592f/2;
+        float phimax = 3.141592f/2 - 0.05;
         float phimin = -phimax;
 
         if (g_CameraPhi > phimax)
@@ -1560,19 +1625,36 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
 
     // Se o usuário pressionar a tecla ESC, fechamos a janela.
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
+    {
+        if(g_InitialScreen)
+        {
+            glfwSetWindowShouldClose(window, GL_TRUE);
+        }
+        else{
+            g_InitialScreen = true;
+        }
+    }
 
     // Jogo começa quando sai da tela inicial
     if(!g_InitialScreen)
     {
 
         // Se o usuário apertar a tecla W, movimentamos a câmera para frente.
-        if ( (key == GLFW_KEY_W || key == GLFW_KEY_UP) && action == GLFW_PRESS)
+        if ( (key == GLFW_KEY_W || key == GLFW_KEY_UP) && action == GLFW_PRESS )
         {
             g_WKeyPressed = true;
         }
         else if( (key == GLFW_KEY_W || key == GLFW_KEY_UP) && action == GLFW_RELEASE){
             g_WKeyPressed = false;
+        }
+
+        // Se o usuário apertar a tecla S, movimentamos a câmera para trás.
+        if ( (key == GLFW_KEY_S || key == GLFW_KEY_DOWN) && action == GLFW_PRESS )
+        {
+            g_SKeyPressed = true;
+        }
+        else if( (key == GLFW_KEY_S || key == GLFW_KEY_DOWN) && action == GLFW_RELEASE){
+            g_SKeyPressed = false;
         }
 
         // Se o usuário apertar a tecla A, movimentamos a câmera para a esquerda.
@@ -1582,15 +1664,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         }
         else if( (key == GLFW_KEY_A || key == GLFW_KEY_LEFT) && action == GLFW_RELEASE){
             g_AKeyPressed = false;
-        }
-
-        // Se o usuário apertar a tecla S, movimentamos a câmera para trás.
-        if ( (key == GLFW_KEY_S || key == GLFW_KEY_DOWN) && action == GLFW_PRESS)
-        {
-            g_SKeyPressed = true;
-        }
-        else if( (key == GLFW_KEY_S || key == GLFW_KEY_DOWN) && action == GLFW_RELEASE){
-            g_SKeyPressed = false;
         }
 
         // Se o usuário apertar a tecla D, movimentamos a câmera para a direita.
@@ -1630,17 +1703,22 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         }
 
         // Se o usuário apertar space ele troca o mapa.
-        if (key == GLFW_KEY_SPACE  && action == GLFW_PRESS)
+        if (key == GLFW_KEY_SPACE  && g_LadderCollision && action == GLFW_PRESS)
         {
             g_OutCave = !g_OutCave;
+            
+            free_camera = true;
+            g_LadderCollision = false;
 
             if(g_OutCave)
             {
-                g_CameraTheta = M_PI/4;
+                g_CameraTheta = M_PI + M_PI/4 + M_PI/8;
                 g_CameraPhi = 0.0f;
-                g_TorsoPositionX = -60.0f;
-                g_TorsoPositionY = 0.0f;
-                g_TorsoPositionZ = 410.0f;
+                g_TorsoPositionX = out_caveX;
+                g_TorsoPositionY = out_caveY;
+                g_TorsoPositionZ = out_caveZ;
+
+                camera_position_c  = glm::vec4(g_TorsoPositionX - 8.0f, g_TorsoPositionY + 4.0f, g_TorsoPositionZ - 8.0f, 1.0f);
             }
             else{
                 g_CameraTheta = M_PI_2;
@@ -1655,12 +1733,28 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             free_camera = free_camera == true ? false : (g_OutCave == true ? true : false);
         }
 
+        /*// Se o usuário apertar space perto da escada ele vai para fora da caverna.
+        if (g_LadderCollision && key == GLFW_KEY_SPACE  && action == GLFW_PRESS)
+        {
+            g_OutCave = true;
+
+            g_CameraTheta = M_PI/4;
+            g_CameraPhi = 0.0f;
+
+            g_TorsoPositionX = -60.0f;
+            g_TorsoPositionY = 0.0f;
+            g_TorsoPositionZ = 410.0f;
+
+            g_LadderCollision = false;
+        }*/
+
     }
     else{
         // Se o usuário apertar a tecla enter na tela inicial, começa o jogo.
         if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
         {
             g_InitialScreen = false;
+            g_InitialScreen_FirstTime = false;
             //g_CameraTheta = 0.0f;
             //g_CameraPhi = 0.0f;
         }
@@ -1774,8 +1868,8 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
 
     if ( ellapsed_seconds > 1.0f )
     {
-        numchars = snprintf(buffer, 20, "%.2f fps", ellapsed_frames / ellapsed_seconds);
-        //numchars = snprintf(buffer, 20, "%f,%f", g_TorsoPositionX, g_TorsoPositionZ);
+        //numchars = snprintf(buffer, 20, "%.2f fps", ellapsed_frames / ellapsed_seconds);
+        numchars = snprintf(buffer, 20, "%f,%f", g_TorsoPositionX, g_TorsoPositionZ);
 
         old_seconds = seconds;
         ellapsed_frames = 0;
@@ -2392,23 +2486,6 @@ void AddCave(){
 
     glm::mat4 model = Matrix_Identity();
 
-    // Desenhamos o plano da caverna
-    model = Matrix_Rotate_X(-M_PI_2)
-            * Matrix_Scale(2.0f,2.0f,2.0f);
-    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-    glUniform1i(g_object_id_uniform, CAVE);
-    DrawVirtualObject("cave_map");
-    colision_player_plane_points(model, 0, &cavemodel);
-
-    model = Matrix_Rotate_X(-M_PI_2)
-            * Matrix_Rotate_Z(M_PI)
-            * Matrix_Translate(0.0f,22.0f,0.0f)
-            * Matrix_Scale(2.0f,2.0f,2.0f);
-    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-    glUniform1i(g_object_id_uniform, CAVE);
-    DrawVirtualObject("cave_map");
-    colision_player_plane_points(model, 0, &cavemodel);
-
     // Desenhamos paredes da caverna
     model = Matrix_Rotate_X(-M_PI_2)
             * Matrix_Scale(2.0f,2.0f,2.0f);
@@ -2454,6 +2531,34 @@ void AddCave(){
 
 }
 
+void AddCavePhysics(){
+
+    // Permite o desenho de objetos transparentes
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glm::mat4 model = Matrix_Identity();
+
+    // Desenhamos o plano da caverna
+    model = Matrix_Rotate_X(-M_PI_2)
+            * Matrix_Translate(0.0f,-2.75f,0.0f)
+            * Matrix_Scale(1.75f,2.0f,2.0f);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, CAVE);
+    DrawVirtualObject("cave_map");
+    colision_player_plane_points(model, 0, &cavemodel);
+
+    model = Matrix_Rotate_X(-M_PI_2)
+            * Matrix_Rotate_Z(M_PI)
+            * Matrix_Translate(0.0f,19.75f,0.0f)
+            * Matrix_Scale(1.75f,2.0f,2.0f);
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, CAVE);
+    DrawVirtualObject("cave_map");
+    colision_player_plane_points(model, 0, &cavemodel);
+
+}
+
 void AddLadder(glm::mat4 model){
 
     // Desenhamos a escada
@@ -2461,6 +2566,12 @@ void AddLadder(glm::mat4 model){
     glUniform1i(g_object_id_uniform, LADDER);
     DrawVirtualObject("ladder_ladder_material_0");
     colision_player_box_points(model, "ladder_ladder_material_0");
+    if(interact_radius(model, "ladder_ladder_material_0", 2.0f) == true){
+        g_LadderCollision = true;
+    }
+    else{
+        g_LadderCollision = false;
+    }
 
 }
 
@@ -2890,6 +3001,43 @@ void AddMountain(glm::mat4 model, char* texture){
 
 }
 
+void AddRabbit(float translate_x, float translate_y, float translate_z, float scale, float speed_rabbit){
+
+    // Declaração dos pontos que definirão a curva criada
+    glm::vec4 p1 = glm::vec4(translate_x, translate_y, translate_z, 1.0f);
+    glm::vec4 p2 = glm::vec4(translate_x + 10.0f, translate_y, translate_z + 10.0f, 1.0f);
+    glm::vec4 p3 = glm::vec4(out_caveX, out_caveY, out_caveZ - 2.0f, 1.0f);
+    
+    glm::vec4 ponto_atual;
+
+    // A curva vai de um intervalo [0,1]
+    if(movement_rabbit_part >= 0 && movement_rabbit_part <= 1){
+        movement_rabbit_part = movement_rabbit_part + delta_t * speed_rabbit;
+        ponto_atual = bezier_curve_two_degree(p1, p2, p3, movement_rabbit_part);
+
+    // Se a curva acabou apenas deixar o coelho na posicao final
+    }else{
+        ponto_atual = p3;
+    }
+
+    // Aplicação das transformacoes geométricas de acordo com o ponto retornado da funcao de bezier
+    glm::mat4 model = Matrix_Translate(ponto_atual.x, ponto_atual.y, ponto_atual.z)
+                    * Matrix_Scale(scale, scale, scale);
+
+    // Desenhamos a grama
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, RABBIT);
+    DrawVirtualObject("rabbit");
+}
+
+void AddBear(glm::mat4 model){
+
+    // Desenhamos a grama
+    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(g_object_id_uniform, BEAR);
+    DrawVirtualObject("bear");
+}
+
 void colision_player_plane_points(glm::mat4 model, int indice, ObjModel* ObjModel){
     // Tamanho do cubo do jogador
     float range_cubo = 0.5f;
@@ -3091,16 +3239,52 @@ bool interact_radius(glm::mat4 model, char* object, float radius_expand){
     return colision;
 }
 
-// Escrevemos na tela o número de quadros renderizados por segundo (frames per
-// second).
-void TextRendering_ShowChatCharacters(GLFWwindow* window, char* mensagem, float scale)
+// Escrevemos na tela o texto da tela inicial.
+void TextRendering_ShowInitialScreenText(GLFWwindow* window, char* mensagem, float scale)
 {
 
     float lineheight = TextRendering_LineHeight(window);
     float charwidth = TextRendering_CharWidth(window);
 
-    TextRendering_PrintString(window, mensagem,  - (strlen(mensagem)*charwidth*scale) / 2 , 0.0f, scale);
+    TextRendering_PrintString(window, mensagem,  - (strlen(mensagem)*charwidth*scale) / 2 , -0.1f, scale);
     //TextRendering_PrintString(window, "Perspective", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);
+}
+
+// Escrevemos na tela as conversas e opções de interação.
+void TextRendering_ShowChatCharacters(GLFWwindow* window, char* mensagem, float scale, float position)
+{
+
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    TextRendering_PrintString(window, mensagem,  - (strlen(mensagem)*charwidth*scale) / 2 , position, scale);
+    //TextRendering_PrintString(window, "Perspective", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);
+}
+
+glm::vec4 bezier_curve_two_degree(glm::vec4 p1, glm::vec4 p2, glm::vec4 p3, float t){
+
+    glm::vec4 c12 = glm::vec4(
+        p1.x + (t * (p2.x - p1.x)),
+        p1.y + (t * (p2.y - p1.y)),
+        p1.z + (t * (p2.z - p1.z)),
+        1.0f
+    );
+
+    glm::vec4 c23 = glm::vec4(
+        p2.x + (t * (p3.x - p2.x)),
+        p2.y + (t * (p3.y - p2.y)),
+        p2.z + (t * (p3.z - p2.z)),
+        1.0f
+    );
+
+    glm::vec4 c_t = glm::vec4(
+        c12.x + (t * (c23.x - c12.x)),
+        c12.y + (t * (c23.y - c12.y)),
+        c12.z + (t * (c23.z - c12.z)),
+        1.0f
+    );
+
+    return c_t;
 }
 
 
