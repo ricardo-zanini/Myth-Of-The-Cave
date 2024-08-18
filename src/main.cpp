@@ -327,7 +327,7 @@ bool g_ShowPrisionerFirstChat = false;
 
 int PrisionerFirstChatID = 0;
 int PrisionerFirstChatMAX = 4;
-char PrisionerFirstChat[][500] = {
+char PrisionerFirstChat[][150] = {
     {"(Prisioneiro) => Ei, cara, como voce foi parar ai embaixo?"},
     {"(Jogador) => Eu nao sei, eu acordei aqui."},
     {"(Prisioneiro) => Caramba, cara, sobe dai. Os monstros vao te matar assim como fizeram com o Pericles."},
@@ -341,7 +341,7 @@ char PrisionerFirstChatOption1[] = "(Jogador) => Tem razao... Acho que eh melhor
 
 int PrisionerFirstChatOption2ID = 0;
 int PrisionerFirstChatOption2MAX = 2;
-char PrisionerFirstChatOption2[][500] = {
+char PrisionerFirstChatOption2[][150] = {
     {"(Jogador) => Sei nao, Prometheus, nao parece perigoso."},
     {"(Prisioneiro) => Voce que sabe... Eu vou ficar aqui."}
 };
@@ -351,7 +351,7 @@ bool g_ShowPericlesFirstChat = false;
 
 int PericlesFirstChatID = 0;
 int PericlesFirstChatMAX = 21;
-char PericlesFirstChat[][500] = {
+char PericlesFirstChat[][150] = {
     {"(Jogador) => Pericles! Voce esta vivo! Quem diria!"},
     {"(Pericles) => Ahn... Eu diria. Hehe."},
     {"(Jogador) => Foi voce que me libertou?"},
@@ -386,7 +386,7 @@ char PericlesFirstChatOption1[] = "(Pericles) => Ahhhhhh.... fui assassinado!!";
 
 int PericlesFirstChatOption2ID = 0;
 int PericlesFirstChatOption2MAX = 3;
-char PericlesFirstChatOption2[][500] = {
+char PericlesFirstChatOption2[][150] = {
     {"(Pericles) => Desgracado!!"},
     {"(Jogador) => Que bela espada voce tem meu amigo."},
     {"(Pericles) => Bom, tudo bem, faca como quiser! Agora ve se me deixa em paz."}
@@ -394,7 +394,7 @@ char PericlesFirstChatOption2[][500] = {
 
 int PericlesFirstChatOption3ID = 0;
 int PericlesFirstChatOption3MAX = 2;
-char PericlesFirstChatOption3[][500] = {
+char PericlesFirstChatOption3[][150] = {
     {"(Jogador) => Certo, acho que vou seguir seu conselho."},
     {"(Pericles) => Otimo! Hehe. Que os Deuses o acompanhem! Ou melhor, que Hades o acompanhe."}
 };
@@ -409,7 +409,7 @@ int g_ShowBear = 5; //Em qual frase o urso começa a se mover
 
 int OutCaveNoWeaponChatID = 0;
 int OutCaveNoWeaponChatMAX = 7;
-char OutCaveNoWeaponChat[][500] = {
+char OutCaveNoWeaponChat[][150] = {
     {"(Jogador) => Caramba, quanta luz! Mas acho que ja estou me acostumando."},
     {"(Jogador) => Eh tao lindo aqui fora, e tao diferente! Isso eh definitivamente um momento mind blowing!"},
     {"(Jogador) => Meu mundo esta se expandindo agora. Sou uma nova pessoa, e vou buscar mais conhecimento nos anos a frente!"},
@@ -425,7 +425,7 @@ bool g_PlayerKilled = false;
 
 int OutCaveWeaponChatID = 0;
 int OutCaveWeaponChatMAX = 10;
-char OutCaveWeaponChat[][500] = {
+char OutCaveWeaponChat[][150] = {
     {"(Jogador) => Caramba, quanta luz! Mas acho que ja estou me acostumando."},
     {"(Jogador) => Eh tao lindo aqui fora, e tao diferente! Isso eh definitivamente um momento mind blowing!"},
     {"(Jogador) => Meu mundo esta se expandindo agora. Sou uma nova pessoa, e vou buscar mais conhecimento nos anos a frente!"},
@@ -454,7 +454,7 @@ bool g_isSecondChat = false;
 
 int PrisionerSecondChatID = 0;
 int PrisionerSecondChatMAX = 2;
-char PrisionerSecondChat[][500] = {
+char PrisionerSecondChat[][150] = {
     {"(Prometheus) => Voce esta vivo, que bom! Achei que os monstros o haviam matado! Como sobreviveu?"},
     {"[1] Nao encontrei nenhum monstro.      [2] Nao ha monstros."}
 };
@@ -465,7 +465,7 @@ int g_FreePrisioner = 6; //Em qual frase o prisioneiro é libertado
 
 int PrisionerSecondChatOption1ID = 0;
 int PrisionerSecondChatOption1MAX = 10;
-char PrisionerSecondChatOption1[][500] = {
+char PrisionerSecondChatOption1[][150] = {
     {"(Jogador) => Eu sai deste lugar e não encontrei nenhum monstro. Estamos seguros por aqui."},
     {"(Prisioneiro) => Entao eles foram embora? Mas sera que nao podem voltar?"},
     {"(Jogador) => Fique tranquilo, Prometheus, eu tenho uma arma que pode mata-los."},
@@ -480,7 +480,7 @@ char PrisionerSecondChatOption1[][500] = {
 
 int PrisionerSecondChatOption2ID = 0;
 int PrisionerSecondChatOption2MAX = 9;
-char PrisionerSecondChatOption2[][500] = {
+char PrisionerSecondChatOption2[][150] = {
     {"(Jogador) => Nao ha monstros, Prometheus, eh tudo mentira."},
     {"(Prisioneiro) => O que? Como assim?"},
     {"(Jogador) => Os monstros que nos viamos sao apenas sombras de uma fogueira. Ha um mundo inteiro la fora."},
