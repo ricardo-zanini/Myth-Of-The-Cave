@@ -1021,7 +1021,7 @@ int main(int argc, char* argv[])
 
         // Imprimimos na tela informação sobre o número de quadros renderizados
         // por segundo (frames per second).
-        TextRendering_ShowFramesPerSecond(window);
+        //TextRendering_ShowFramesPerSecond(window);
 
         //Texto tela inicial
         if(g_InitialScreen)
