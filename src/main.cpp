@@ -634,9 +634,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/title/yellow-wall-texture-with-scratches.jpg",""); // TextureImageTitle
     LoadTextureImage("../../data/prisioner/667a8017571041f5bb6c01ebdb1137b7_RGB_Promitheus_diffuse.jpeg",""); // TextureImagePrisioner
     LoadTextureImage("../../data/prisioner/63f774b953eb4321a0fd1f09e8419fc0_RGB_EYES_blues.jpeg",""); // TextureImagePrisionerEyes
-    LoadTextureImage("../../data/prisioner/cbce8eba87434b97a168fe8aadeb0bd1_RGB_Teeth.tga.png",""); // TextureImagePrisionerTeeth
     LoadTextureImage("../../data/prisioner/eebbf88e369c458f9a44690ec444a16e_RGB_Aset_rock_sandstone_M_pjbqZ_2K_Albedo.jpeg",""); // TextureImagePrisionerRock
-    LoadTextureImage("../../data/prisioner/f2153fd7eeac4b6eb7d4a5a1a865ba7a_RGB_Chain_diffuse.tga.png",""); // TextureImagePrisionerChain
     LoadTextureImage("../../data/ladder/ladder_material_baseColor.png",""); // TextureImageLadder
     LoadTextureImage("../../data/greek2/RGB_379bb9ffa60c48d994f2b3773c413794_Pericles_albedo.jpeg",""); // TextureImageGreek2
     LoadTextureImage("../../data/mountain/RGB_b2bf6ec020774c3e8b09917a167753a5_MountainAlbedo4096.jpg",""); // TextureImageMountain
@@ -655,7 +653,6 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/lettering/FINAL5.png",""); // TextureImageEnding5
     LoadTextureImage("../../data/lettering/FINAL6.png",""); // TextureImageEnding6
     LoadTextureImage("../../data/lettering/FINAL7.png",""); // TextureImageEnding7
-    LoadTextureImage("../../data/lettering/f2153fd7eeac4b6eb7d4a5a1a865ba7a_RGB_Chain_diffuse.tga.png",""); // TextureImageEnding8 //Por algum motivo está dando erro
     LoadTextureImage("../../data/lettering/FINAL8.png",""); // TextureImageEnding8
     LoadTextureImage("../../data/lettering/FINAL9.png",""); // TextureImageEnding9
 
@@ -1427,29 +1424,27 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageTitle"), 7);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImagePrisioner"), 8);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImagePrisionerEyes"), 9);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImagePrisionerTeeth"), 10);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImagePrisionerRock"), 11);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImagePrisionerChain"), 12);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageLadder"), 13);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageGreek2"), 14);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageMountain"), 15);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalMountain"), 16);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveEntrance1"), 17);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveEntrance1"), 18);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveEntrance2"), 19);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveEntrance2"),20);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageRabbit"), 21);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageBear"), 22);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageLettering"), 23);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding1"), 24);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding2"), 25);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding3"), 26);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding4"), 27);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding5"), 28);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding6"), 29);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding7"), 30);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding8"), 32);
-    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding9"), 33);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImagePrisionerRock"), 10);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageLadder"), 11);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageGreek2"), 12);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageMountain"), 13);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalMountain"), 14);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveEntrance1"), 15);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveEntrance1"), 16);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageCaveEntrance2"), 17);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureNormalCaveEntrance2"),18);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageRabbit"), 19);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageBear"), 20);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageLettering"), 21);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding1"), 22);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding2"), 23);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding3"), 24);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding4"), 25);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding5"), 26);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding6"), 27);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding7"), 28);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding8"), 29);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImageEnding9"), 30);
     glUseProgram(0);
 }
 
@@ -3579,7 +3574,7 @@ void AddCampfire(glm::mat4 model){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, CAMPFIRE);
     DrawVirtualObject("Campfire");
-    colision_player_sphere_points(model, "Campfire", 1.6f);
+    colision_player_sphere_points(model, "Campfire", 1.3f);
 
     // Permite o desenho de objetos transparentes
     glEnable(GL_BLEND);

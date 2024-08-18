@@ -72,9 +72,7 @@ uniform sampler2D TextureImageGreekHead;
 uniform sampler2D TextureImageTitle;
 uniform sampler2D TextureImagePrisioner;
 uniform sampler2D TextureImagePrisionerEyes;
-uniform sampler2D TextureImagePrisionerTeeth;
 uniform sampler2D TextureImagePrisionerRock;
-uniform sampler2D TextureImagePrisionerChain;
 uniform sampler2D TextureImageLadder;
 uniform sampler2D TextureImageGreek2;
 uniform sampler2D TextureImageMountain;
@@ -378,9 +376,7 @@ void main()
     vec3 KdTitle = texture(TextureImageTitle, vec2(U,V)).rgb;
     vec3 KdPrisioner = texture(TextureImagePrisioner, vec2(U,V)).rgb;
     vec3 KdPrisionerEyes = texture(TextureImagePrisionerEyes, vec2(U,V)).rgb;
-    vec3 KdPrisionerTeeth = texture(TextureImagePrisionerTeeth, vec2(U,V)).rgb;
     vec3 KdPrisionerRock = texture(TextureImagePrisionerRock, vec2(U,V)).rgb;
-    vec3 KdPrisionerChain = texture(TextureImagePrisionerChain, vec2(U,V)).rgb;
     vec3 KdLadder = texture(TextureImageLadder, vec2(U,V)).rgb;
     vec3 KdGreek2 = texture(TextureImageGreek2, vec2(U,V)).rgb;
     vec3 KdMountain = texture(TextureImageMountain, vec2(U,V)).rgb;
@@ -466,7 +462,7 @@ void main()
     }
     else if ( object_id == PRISIONER_TEETH )
     {
-        color.rgb = KdPrisionerTeeth * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+        color.rgb = KdCaveEntrance1 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
     else if ( object_id == PRISIONER_ROCK )
     {
@@ -474,7 +470,7 @@ void main()
     }
     else if ( object_id == PRISIONER_CHAIN )
     {
-        color.rgb = KdPrisionerChain * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+        color.rgb = KdCaveEntrance1 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
     else if ( object_id == LADDER )
     {
