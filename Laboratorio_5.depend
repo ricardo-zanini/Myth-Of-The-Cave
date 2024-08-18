@@ -1922,7 +1922,7 @@
 	<inttypes.h>
 	<stdint.h>
 
-1724015385 source:c:\users\berna\onedrive\documentos\bernardo\ufrgs\semestre 4\fundamentos de computação gráfica\mythofthecave\src\main.cpp
+1724023451 source:c:\users\berna\onedrive\documentos\bernardo\ufrgs\semestre 4\fundamentos de computação gráfica\mythofthecave\src\main.cpp
 	<cmath>
 	<cstdio>
 	<cstdlib>
@@ -1944,6 +1944,7 @@
 	<stb_image.h>
 	"utils.h"
 	"matrices.h"
+	"collisions.cpp"
 
 1715625103 c:\users\berna\onedrive\documentos\bernardo\ufrgs\semestre 4\fundamentos de computação gráfica\mythofthecave\include\glfw\glfw3.h
 	<stddef.h>
@@ -3815,6 +3816,50 @@
 	<tiny_obj_loader.h>
 
 1724019683 c:\codigos_code_blocks\trabalho_final\mythofthecave\include\sceneobject.h
+	<string>
+	<glm/vec4.hpp>
+	<glm/gtc/type_ptr.hpp>
+	<GLFW/glfw3.h>
+
+1724023349 c:\users\berna\onedrive\documentos\bernardo\ufrgs\semestre 4\fundamentos de computação gráfica\mythofthecave\src\collisions.cpp
+	<cmath>
+	<cstdio>
+	<cstdlib>
+	<map>
+	<stack>
+	<string>
+	<vector>
+	<limits>
+	<fstream>
+	<sstream>
+	<stdexcept>
+	<algorithm>
+	<glm/mat4x4.hpp>
+	<glm/vec4.hpp>
+	<glm/gtc/type_ptr.hpp>
+	<glad/glad.h>
+	<GLFW/glfw3.h>
+	"utils.h"
+	"matrices.h"
+	"objModel.h"
+	"MinMax.h"
+	"SceneObject.h"
+
+1724023349 c:\users\berna\onedrive\documentos\bernardo\ufrgs\semestre 4\fundamentos de computação gráfica\mythofthecave\include\objmodel.h
+	<cmath>
+	<cstdio>
+	<cstdlib>
+	<map>
+	<stack>
+	<string>
+	<vector>
+	<limits>
+	<fstream>
+	<tiny_obj_loader.h>
+
+1724023349 c:\users\berna\onedrive\documentos\bernardo\ufrgs\semestre 4\fundamentos de computação gráfica\mythofthecave\include\minmax.h
+
+1724023349 c:\users\berna\onedrive\documentos\bernardo\ufrgs\semestre 4\fundamentos de computação gráfica\mythofthecave\include\sceneobject.h
 	<string>
 	<glm/vec4.hpp>
 	<glm/gtc/type_ptr.hpp>
