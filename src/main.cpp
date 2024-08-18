@@ -1497,7 +1497,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                 const float vx = model->attrib.vertices[3*idx.vertex_index + 0];
                 const float vy = model->attrib.vertices[3*idx.vertex_index + 1];
                 const float vz = model->attrib.vertices[3*idx.vertex_index + 2];
-                //printf("tri %d vert %d = (%.2f, %.2f, %.2f)\n", (int)triangle, (int)vertex, vx, vy, vz);
+
                 model_coefficients.push_back( vx ); // X
                 model_coefficients.push_back( vy ); // Y
                 model_coefficients.push_back( vz ); // Z

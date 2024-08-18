@@ -217,9 +217,6 @@ void collision_player_box_points(
         && player_center_point.y <= coords_max_T.y
         && player_center_point.z <= coords_max_T.z
     ){
-        printf("min ---> x:%f // y: %f // z:%f // w: %f \n", player_X, player_Y + 1.0f, player_Z, 1.0f);
-        printf("min ---> x:%f // y: %f // z:%f // w: %f \n", coords_min_T.x, coords_min_T.y, coords_min_T.z, coords_min_T.w);
-        printf("max ---> x:%f // y: %f // z:%f // w: %f \n\n", coords_max_T.x, coords_max_T.y, coords_max_T.z, coords_max_T.w);
         *movement_restricted = true;
         *movement_normal = (player_center_point - box_center);
         *movement_normal = glm::vec4(movement_normal->x, 0.0f, movement_normal->z, 0.0f);
