@@ -45,6 +45,16 @@ uniform mat4 projection;
 #define CAVE_ENTRANCE2 18
 #define RABBIT 19
 #define BEAR 20
+#define LETTERING 21
+#define ENDING1 22
+#define ENDING2 23
+#define ENDING3 24
+#define ENDING4 25
+#define ENDING5 26
+#define ENDING6 27
+#define ENDING7 28
+#define ENDING8 29
+#define ENDING9 30
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -75,6 +85,16 @@ uniform sampler2D TextureImageCaveEntrance2;
 uniform sampler2D TextureNormalCaveEntrance2;
 uniform sampler2D TextureImageRabbit;
 uniform sampler2D TextureImageBear;
+uniform sampler2D TextureImageLettering;
+uniform sampler2D TextureImageEnding1;
+uniform sampler2D TextureImageEnding2;
+uniform sampler2D TextureImageEnding3;
+uniform sampler2D TextureImageEnding4;
+uniform sampler2D TextureImageEnding5;
+uniform sampler2D TextureImageEnding6;
+uniform sampler2D TextureImageEnding7;
+uniform sampler2D TextureImageEnding8;
+uniform sampler2D TextureImageEnding9;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -300,6 +320,20 @@ void main()
         Ks = vec3(0.5,0.5,0.5);
         Ka = vec3(1.0, 1.0, 1.0);
     }
+    else if ( object_id == RABBIT || object_id == BEAR )
+    {
+        // Propriedades espectrais
+        Kd = vec3(0.8,0.8,0.8);
+        Ks = vec3(0.5,0.5,0.5);
+        Ka = vec3(1.0, 1.0, 1.0);
+    }
+    else if ( object_id >= LETTERING && object_id <= ENDING9 )
+    {
+        // Propriedades espectrais
+        Kd = vec3(0.8,0.8,0.8);
+        Ks = vec3(0.5,0.5,0.5);
+        Ka = vec3(1.0, 1.0, 1.0);
+    }
 
 
     // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
@@ -354,6 +388,16 @@ void main()
     vec3 KdCaveEntrance2 = texture(TextureImageCaveEntrance2, vec2(U,V)).rgb;
     vec3 KdRabbit = texture(TextureImageRabbit, vec2(U,V)).rgb;
     vec3 KdBear = texture(TextureImageBear, vec2(U,V)).rgb;
+    vec3 KdLettering = texture(TextureImageLettering, vec2(U,V)).rgb;
+    vec3 KdEnding1 = texture(TextureImageEnding1, vec2(U,V)).rgb;
+    vec3 KdEnding2 = texture(TextureImageEnding2, vec2(U,V)).rgb;
+    vec3 KdEnding3 = texture(TextureImageEnding3, vec2(U,V)).rgb;
+    vec3 KdEnding4 = texture(TextureImageEnding4, vec2(U,V)).rgb;
+    vec3 KdEnding5 = texture(TextureImageEnding5, vec2(U,V)).rgb;
+    vec3 KdEnding6 = texture(TextureImageEnding6, vec2(U,V)).rgb;
+    vec3 KdEnding7 = texture(TextureImageEnding7, vec2(U,V)).rgb;
+    vec3 KdEnding8 = texture(TextureImageEnding8, vec2(U,V)).rgb;
+    vec3 KdEnding9 = texture(TextureImageEnding9, vec2(U,V)).rgb;
 
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
@@ -459,6 +503,76 @@ void main()
     else if ( object_id == BEAR )
     {
         color.rgb = KdBear * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == LETTERING )
+    {
+        //Remove o fundo branco do fogo
+        if(KdLettering.x >= 0.4f && KdLettering.y >= 0.4f && KdLettering.z >= 0.4f)
+            discard;
+        color.rgb = KdLettering * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == ENDING1 )
+    {
+        //Remove o fundo branco do fogo
+        if(KdEnding1.x >= 0.4f && KdEnding1.y >= 0.4f && KdEnding1.z >= 0.4f)
+            discard;
+        color.rgb = KdEnding1 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == ENDING2 )
+    {
+        //Remove o fundo branco do fogo
+        if(KdEnding2.x >= 0.4f && KdEnding2.y >= 0.4f && KdEnding2.z >= 0.4f)
+            discard;
+        color.rgb = KdEnding2 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == ENDING3 )
+    {
+        //Remove o fundo branco do fogo
+        if(KdEnding3.x >= 0.4f && KdEnding3.y >= 0.4f && KdEnding3.z >= 0.4f)
+            discard;
+        color.rgb = KdEnding3 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == ENDING4 )
+    {
+        //Remove o fundo branco do fogo
+        if(KdEnding4.x >= 0.4f && KdEnding4.y >= 0.4f && KdEnding4.z >= 0.4f)
+            discard;
+        color.rgb = KdEnding4 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == ENDING5 )
+    {
+        //Remove o fundo branco do fogo
+        if(KdEnding5.x >= 0.4f && KdEnding5.y >= 0.4f && KdEnding5.z >= 0.4f)
+            discard;
+        color.rgb = KdEnding5 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == ENDING6 )
+    {
+        //Remove o fundo branco do fogo
+        if(KdEnding6.x >= 0.4f && KdEnding6.y >= 0.4f && KdEnding6.z >= 0.4f)
+            discard;
+        color.rgb = KdEnding6 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == ENDING7 )
+    {
+        //Remove o fundo branco do fogo
+        if(KdEnding7.x >= 0.4f && KdEnding7.y >= 0.4f && KdEnding7.z >= 0.4f)
+            discard;
+        color.rgb = KdEnding7 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == ENDING8 )
+    {
+        //Remove o fundo branco do fogo
+        if(KdEnding8.x >= 0.4f && KdEnding8.y >= 0.4f && KdEnding8.z >= 0.4f)
+            discard;
+        color.rgb = KdEnding8 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
+    }
+    else if ( object_id == ENDING9 )
+    {
+        //Remove o fundo branco do fogo
+        if(KdEnding9.x >= 0.4f && KdEnding9.y >= 0.4f && KdEnding9.z >= 0.4f)
+            discard;
+        color.rgb = KdEnding9 * (lambert_diffuse_term + ambient_term + blinn_phong_specular_term);
     }
 
     // Cor final com correção gamma, considerando monitor sRGB.
