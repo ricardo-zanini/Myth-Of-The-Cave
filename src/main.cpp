@@ -2136,7 +2136,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             g_DKeyPressed = false;
         }
 
-        // Se o usuário apertar a tecla ",", movimentamos a câmera para cima.
+        /*// Se o usuário apertar a tecla ",", movimentamos a câmera para cima.
         if (key == GLFW_KEY_COMMA && action == GLFW_PRESS && !g_ShowChat)
         {
             g_COMMAKeyPressed = true;
@@ -2152,7 +2152,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         }
         else if(key == GLFW_KEY_PERIOD && action == GLFW_RELEASE){
             g_PERIODKeyPressed = false;
-        }
+        }*/
 
         // Se o usuário apertar o shift esquerdo o personagem anda mais rápido.
         if (key == GLFW_KEY_LEFT_SHIFT  && action == GLFW_PRESS && !g_ShowChat)
