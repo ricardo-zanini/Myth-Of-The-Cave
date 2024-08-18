@@ -47,6 +47,7 @@
 // Headers locais, definidos na pasta "include/"
 #include "utils.h"
 #include "matrices.h"
+#include "collisions.cpp"
 
 // Constantes
 #define M_PI   3.14159265358979323846
@@ -88,61 +89,6 @@
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
-struct ObjModel
-{
-    tinyobj::attrib_t                 attrib;
-    std::vector<tinyobj::shape_t>     shapes;
-    std::vector<tinyobj::material_t>  materials;
-
-    // Este construtor lê o modelo de um arquivo utilizando a biblioteca tinyobjloader.
-    // Veja: https://github.com/syoyo/tinyobjloader
-    ObjModel(const char* filename, const char* basepath = NULL, bool triangulate = true)
-    {
-        printf("Carregando objetos do arquivo \"%s\"...\n", filename);
-
-        // Se basepath == NULL, então setamos basepath como o dirname do
-        // filename, para que os arquivos MTL sejam corretamente carregados caso
-        // estejam no mesmo diretório dos arquivos OBJ.
-        std::string fullpath(filename);
-        std::string dirname;
-        if (basepath == NULL)
-        {
-            auto i = fullpath.find_last_of("/");
-            if (i != std::string::npos)
-            {
-                dirname = fullpath.substr(0, i+1);
-                basepath = dirname.c_str();
-            }
-        }
-
-        std::string warn;
-        std::string err;
-        bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename, basepath, triangulate);
-
-        if (!err.empty())
-            fprintf(stderr, "\n%s\n", err.c_str());
-
-        if (!ret)
-            throw std::runtime_error("Erro ao carregar modelo.");
-
-        for (size_t shape = 0; shape < shapes.size(); ++shape)
-        {
-            if (shapes[shape].name.empty())
-            {
-                fprintf(stderr,
-                        "*********************************************\n"
-                        "Erro: Objeto sem nome dentro do arquivo '%s'.\n"
-                        "Veja https://www.inf.ufrgs.br/~eslgastal/fcg-faq-etc.html#Modelos-3D-no-formato-OBJ .\n"
-                        "*********************************************\n",
-                    filename);
-                throw std::runtime_error("Objeto sem nome.");
-            }
-            printf("- Objeto '%s'\n", shapes[shape].name.c_str());
-        }
-
-        printf("OK.\n");
-    }
-};
 
 
 // Declaração de funções utilizadas para pilha de matrizes de modelagem.
@@ -169,15 +115,7 @@ void AddRabbit(glm::mat4 model);
 void AddBear(glm::mat4 model);
 void AddLettering(glm::mat4 model, int ending);
 
-
-void colision_player_plane_points(glm::mat4 model, int indice, ObjModel* ObjModel);
-void colision_player_sphere_points(glm::mat4 model, char* object, float radius);
-void colision_player_box_points(glm::mat4 model, char* object);
-
 bool interact_radius(glm::mat4 model, char* object, float radius_expand);
-
-float min3(float n1, float n2, float n3);
-float max3(float n1, float n2, float n3);
 
 void TextRendering_ShowInitialScreenText(GLFWwindow* window, char* mensagem, float scale);
 void TextRendering_ShowChatCharacters(GLFWwindow* window, char* mensagem, float scale, float position);
@@ -229,19 +167,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-
-// Definimos uma estrutura que armazenará dados necessários para renderizar
-// cada objeto da cena virtual.
-struct SceneObject
-{
-    std::string  name;        // Nome do objeto
-    size_t       first_index; // Índice do primeiro vértice dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
-    size_t       num_indices; // Número de índices do objeto dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
-    GLenum       rendering_mode; // Modo de rasterização (GL_TRIANGLES, GL_TRIANGLE_STRIP, etc.)
-    GLuint       vertex_array_object_id; // ID do VAO onde estão armazenados os atributos do modelo
-    glm::vec3    bbox_min; // Axis-Aligned Bounding Box do objeto
-    glm::vec3    bbox_max;
-};
 
 // Abaixo definimos variáveis globais utilizadas em várias funções do código.
 
@@ -3266,7 +3191,7 @@ void AddCavePhysics(){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, CAVE);
     DrawVirtualObject("cave_map");
-    colision_player_plane_points(model, 0, &cavemodel);
+    collision_player_plane_points(model, 0, &cavemodel, g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ, camera_view_vector, &movement_restricted, &movement_normal);
 
     model = Matrix_Rotate_X(-M_PI_2)
             * Matrix_Rotate_Z(M_PI)
@@ -3275,7 +3200,7 @@ void AddCavePhysics(){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, CAVE);
     DrawVirtualObject("cave_map");
-    colision_player_plane_points(model, 0, &cavemodel);
+    collision_player_plane_points(model, 0, &cavemodel, g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ, camera_view_vector, &movement_restricted, &movement_normal);
 
 }
 
@@ -3285,7 +3210,7 @@ void AddLadder(glm::mat4 model){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, LADDER);
     DrawVirtualObject("ladder_ladder_material_0");
-    colision_player_box_points(model, "ladder_ladder_material_0");
+    collision_player_box_points(model, "ladder_ladder_material_0", g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ, &movement_restricted, &movement_normal, g_VirtualScene);
     if(interact_radius(model, "ladder_ladder_material_0", 2.0f) == true){
         g_LadderCollision = true;
     }
@@ -3393,7 +3318,7 @@ void AddPrisioner(glm::mat4 model, bool showBody, bool showRest){
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PRISIONER_ROCK);
         DrawVirtualObject("Rock_Rock_0");
-        colision_player_box_points(model, "Rock_Rock_0");
+        collision_player_box_points(model, "Rock_Rock_0", g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ, &movement_restricted, &movement_normal, g_VirtualScene);
 
         // Desenhamos as partes das correntes que prendem o prisioneiro
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -3574,7 +3499,7 @@ void AddCampfire(glm::mat4 model){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, CAMPFIRE);
     DrawVirtualObject("Campfire");
-    colision_player_sphere_points(model, "Campfire", 1.3f);
+    collision_player_sphere_points(model, "Campfire", 1.3f, g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ, &movement_restricted, &movement_normal, g_VirtualScene);
 
     // Permite o desenho de objetos transparentes
     glEnable(GL_BLEND);
@@ -3708,7 +3633,7 @@ void AddGreek2(glm::mat4 model, GLFWwindow* window){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, GREEK2);
     DrawVirtualObject("pericles");
-    colision_player_box_points(model, "pericles");
+    collision_player_box_points(model, "pericles", g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ, &movement_restricted, &movement_normal, g_VirtualScene);
     if(interact_radius(model, "pericles", 2.0f) == true){
         g_Greek2Collision = true;
     }
@@ -3768,176 +3693,6 @@ void AddBear(glm::mat4 model){
     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, BEAR);
     DrawVirtualObject("bear");
-}
-
-void colision_player_plane_points(glm::mat4 model, int indice, ObjModel* ObjModel){
-    // Tamanho do cubo do jogador
-    float range_cubo = 0.5f;
-
-    // Centro do Jogador
-    glm::vec4 player_center_point = glm::vec4(g_TorsoPositionX, g_TorsoPositionY + 1.0f, g_TorsoPositionZ, 1.0f);
-
-    std::vector<GLuint> indices;
-    size_t first_index = indices.size();
-    size_t num_triangles = ObjModel->shapes[indice].mesh.num_face_vertices.size();
-
-    glm::vec4 view_aux  = glm::vec4(camera_view_vector.x, 0.0f, camera_view_vector.z, 0.0f);
-
-    for (size_t triangle = 0; triangle < num_triangles; ++triangle)
-    {
-        //------------------------ PONTO A ---------------------------------
-
-        tinyobj::index_t idx1 = ObjModel->shapes[indice].mesh.indices[3*triangle];
-
-        indices.push_back(first_index + 3*triangle);
-
-        glm::vec4 pA_aux = glm::vec4(
-            ObjModel->attrib.vertices[3*idx1.vertex_index + 0],
-            ObjModel->attrib.vertices[3*idx1.vertex_index + 1],
-            ObjModel->attrib.vertices[3*idx1.vertex_index + 2],
-            1.0f
-        );
-
-        auto pA = model*pA_aux;
-
-        //------------------------ PONTO B ---------------------------------
-
-        tinyobj::index_t idx2 = ObjModel->shapes[indice].mesh.indices[3*triangle + 1];
-
-        indices.push_back(first_index + 3*triangle + 1);
-
-        glm::vec4 pB_aux = glm::vec4(
-            ObjModel->attrib.vertices[3*idx2.vertex_index + 0],
-            ObjModel->attrib.vertices[3*idx2.vertex_index + 1],
-            ObjModel->attrib.vertices[3*idx2.vertex_index + 2],
-            1.0f
-        );
-
-        auto pB = model*pB_aux;
-
-        //------------------------ PONTO C ---------------------------------
-
-        tinyobj::index_t idx3 = ObjModel->shapes[indice].mesh.indices[3*triangle + 2];
-
-        indices.push_back(first_index + 3*triangle + 2);
-
-        glm::vec4 pC_aux = glm::vec4(
-            ObjModel->attrib.vertices[3*idx3.vertex_index + 0],
-            ObjModel->attrib.vertices[3*idx3.vertex_index + 1],
-            ObjModel->attrib.vertices[3*idx3.vertex_index + 2],
-            1.0f
-        );
-
-        auto pC = model*pC_aux;
-
-        //------------------------------------------------------------------
-
-        // busca-se por dois pontos para representar o antigo triangulo como um cubo,
-        // como as paredes são planas e alinhadas com os eixos X e Z não temos problemas
-        glm::vec4 min_XZ = glm::vec4(min3(pA.x, pB.x, pC.x), min3(pA.y, pB.y, pC.y), min3(pA.z, pB.z, pC.z), 1.0f);
-        glm::vec4 max_XZ = glm::vec4(max3(pA.x, pB.x, pC.x), max3(pA.y, pB.y, pC.y), max3(pA.z, pB.z, pC.z), 1.0f);
-        glm::vec4 normal_XZ = crossproduct((pA - pB), (pC - pB));
-
-        float margem = 0.5f;
-        float margem_plano = 20.0f;
-
-        // Verifica se o vértice se encontra nos limites do plano
-        // (usa-se uma margem pois os planos allinhados com os eixos X e Z podem ter min.x e max.x iguais, oque dificulta a igualdade visto que utilizamos float)
-        if(
-            player_center_point.x >= min_XZ.x - margem
-            && player_center_point.z >= min_XZ.z - margem
-            && player_center_point.x <= max_XZ.x + margem
-            && player_center_point.z <= max_XZ.z + margem
-        ){
-            float pertence_plano = dotproduct((player_center_point - max_XZ), normal_XZ);
-
-            // Verifica-se se o ponto está em [0,1] na equação do plano
-            // (Gostaria de entender porque essa "margem_2" é necessária ;-;)
-            // - Ricardo depois de 3h nesse problema
-            if(pertence_plano >= 0.0f - margem_plano && pertence_plano <= 1.0f + margem_plano){
-                movement_restricted = true;
-                movement_normal = glm::vec4(normal_XZ.x, 0.0f, normal_XZ.z, 0.0f);
-
-                if(dotproduct(view_aux, movement_normal) > 0){
-                    movement_normal = -movement_normal;
-                }
-            }
-        }
-    }
-}
-
-void colision_player_sphere_points(glm::mat4 model, char* object, float radius){
-        // Tamanho do cubo do jogador
-    float range_cubo = 0.5f;
-
-    // Centro do Jogador
-    glm::vec4 player_center_point = glm::vec4(g_TorsoPositionX, g_TorsoPositionY + 1.0f, g_TorsoPositionZ, 1.0f);
-
-    // Procura e calcula coordenadas mínima e máxima do modelo (aplicando matriz de transformação)
-    glm::vec3 bbox_min = g_VirtualScene[object].bbox_min;
-    glm::vec3 bbox_max = g_VirtualScene[object].bbox_max;
-
-    glm::vec4 coords_min =  glm::vec4(bbox_min.x, bbox_min.y, bbox_min.z, 1.0f);
-    glm::vec4 coords_max =  glm::vec4(bbox_max.x, bbox_max.y, bbox_max.z, 1.0f);
-
-    auto coords_min_T = model * coords_min;
-    auto coords_max_T = model * coords_max;
-
-    // Encontra o centro do modelo
-    glm::vec4 sphere_center = glm::vec4(
-        coords_min_T.x + ((coords_max_T.x - coords_min_T.x) / 2),
-        coords_min_T.y + ((coords_max_T.y - coords_min_T.y) / 2),
-        coords_min_T.z + ((coords_max_T.z - coords_min_T.z) / 2),
-        1.0f
-    );
-
-    // Verifica se o centro do player colide com uma esfera
-    if(norm(player_center_point - sphere_center) <= radius){
-        movement_restricted = true;
-        movement_normal = (player_center_point - sphere_center);
-        movement_normal = glm::vec4(movement_normal.x, 0.0f, movement_normal.z, 0.0f);
-    }
-}
-
-void colision_player_box_points(glm::mat4 model, char* object){
-
-    // Centro do Jogador
-    glm::vec4 player_center_point = glm::vec4(g_TorsoPositionX, g_TorsoPositionY + 1.0f, g_TorsoPositionZ, 1.0f);
-
-    // Procura e calcula coordenadas mínima e máxima do modelo (aplicando matriz de transformação)
-    glm::vec3 bbox_min = g_VirtualScene[object].bbox_min;
-    glm::vec3 bbox_max = g_VirtualScene[object].bbox_max;
-
-    glm::vec4 coords_min =  glm::vec4(bbox_min.x - 10, bbox_min.y - 10, bbox_min.z - 10, 1.0f);
-    glm::vec4 coords_max =  glm::vec4(bbox_max.x + 10, bbox_max.y + 10, bbox_max.z + 10, 1.0f);
-
-    auto coords_min_T = model * (coords_min);
-    auto coords_max_T = model * coords_max;
-
-    glm::vec4 box_center = glm::vec4(
-        coords_min_T.x + ((coords_max_T.x - coords_min_T.x) / 2),
-        coords_min_T.y + ((coords_max_T.y - coords_min_T.y) / 2),
-        coords_min_T.z + ((coords_max_T.z - coords_min_T.z) / 2),
-        1.0f
-    );
-
-    // Verifica se o player entra nos limites do cubo
-    if(
-           player_center_point.x >= coords_min_T.x
-        && player_center_point.y >= coords_min_T.y
-        && player_center_point.z >= coords_min_T.z
-
-        && player_center_point.x <= coords_max_T.x
-        && player_center_point.y <= coords_max_T.y
-        && player_center_point.z <= coords_max_T.z
-    ){
-        printf("min ---> x:%f // y: %f // z:%f // w: %f \n", g_TorsoPositionX, g_TorsoPositionY + 1.0f, g_TorsoPositionZ, 1.0f);
-        printf("min ---> x:%f // y: %f // z:%f // w: %f \n", coords_min_T.x, coords_min_T.y, coords_min_T.z, coords_min_T.w);
-        printf("max ---> x:%f // y: %f // z:%f // w: %f \n\n", coords_max_T.x, coords_max_T.y, coords_max_T.z, coords_max_T.w);
-        movement_restricted = true;
-        movement_normal = (player_center_point - box_center);
-        movement_normal = glm::vec4(movement_normal.x, 0.0f, movement_normal.z, 0.0f);
-    }
 }
 
 bool interact_radius(glm::mat4 model, char* object, float radius_expand){
@@ -4027,39 +3782,6 @@ glm::vec4 bezier_curve_two_degree(glm::vec4 p1, glm::vec4 p2, glm::vec4 p3, floa
     );
 
     return c_t;
-}
-
-
-float min3(float n1, float n2, float n3){
-    if(n1 < n2){
-        if(n1 < n3){
-            return n1;
-        }else{
-            return n3;
-        }
-    }else{
-        if(n2 < n3){
-            return n2;
-        }else{
-            return n3;
-        }
-    }
-}
-
-float max3(float n1, float n2, float n3){
-    if(n1 > n2){
-        if(n1 > n3){
-            return n1;
-        }else{
-            return n3;
-        }
-    }else{
-        if(n2 > n3){
-            return n2;
-        }else{
-            return n3;
-        }
-    }
 }
 
 
