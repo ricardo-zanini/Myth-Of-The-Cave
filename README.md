@@ -32,11 +32,12 @@ por conta do prazo apertado (para nós). No entanto, conseguimos fazer muito al�
 
 
 5) Manual de Comandos:
- - W ou SETA PARA CIMA: Andar para frente
- - A ou SETA PARA A ESQUERDA: Virar para a esquerda
- - D ou SETA PARA A DIREITA: Virar para a direita
+ - W ou SETA PARA CIMA: Andar para frente ou movimentar câmera livre
+ - A ou SETA PARA A ESQUERDA: Virar para a esquerda ou movimentar câmera livre
+ - D ou SETA PARA A DIREITA: Virar para a direita ou movimentar câmera livre
+ - S ou SETA PARA BAIXO: Movimentar câmera livre
  - SHIFT ESQUERDO: Andar mais rápido
- - Clicar e arrastar o mouse: movimenta a câmera para cima e para baixo
+ - Clicar e arrastar o mouse: movimenta a câmera para cima e para baixo ou movimentar câmera livre
  - Enter: Comando usado para passar diálogos
  - Space: Comando usado para falar com outros personagens
  - Teclas 1, 2 e 3: Escolhas de ações e diálogos
