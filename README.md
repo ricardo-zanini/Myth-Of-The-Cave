@@ -1,7 +1,7 @@
 Myth of the Cave - Desenvolvido por Bernardo Cobalchini Zietolie e Ricardo Zanini de Costa
 
 1) Contribuição de cada membro:
-2) 
+
 Bernardo:
   - Câmera lookat
   - Modelos 3D e construção dos mapas
